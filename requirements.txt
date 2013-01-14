@@ -1,0 +1,2 @@
+Twisted==12.2.0
+paisley>=0.3.1
