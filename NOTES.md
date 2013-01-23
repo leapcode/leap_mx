@@ -22,9 +22,12 @@ page](https://we.riseup.net/leap/mx) :
 
 3. How do get it to go faster? Should we create some mockups and benchmark
 them? Could we attempt to learn which aliases are most often resolved and
-prioritize keeping those in in-memory mappings?
+prioritize keeping those in in-memory mappings? Is
+[memcache](http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt)
+a viable protocol for this, and how would it interact with CouchDB?
 
 4. What lib should we use for Python + Twisted + GPG/PGP ?
+   4.a. It looks like most people are using python-gnupg...
 
 
 ## Tickets ##
@@ -48,3 +51,9 @@ ticket for feature-check_recipient:
 ticket for feature-virtual_alias_map: 
 
     o Get the recipient's userid from couchdb.
+
+ticket for feature-evaluate_python_gnupg:
+
+    o Briefly audit library in order to assess if it has the necessary
+    features, as well as its general code quality.
+

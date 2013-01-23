@@ -7,17 +7,17 @@ Classes for resolving postfix aliases.
 
 @authors: Isis Agora Lovecruft
 @version: 0.0.1-beta
-@license: WTFPL see included LICENSE file
+@license: see included LICENSE file
 @copyright: copyright 2013 Isis Agora Lovecruft
 '''
 
 import os
 
 from twisted.internet  import address
-from twisted.mail      import maildir
+from twisted.mail      import maildir, alias
 from twisted.protocols import postfix
 
-from leap.mx import net, log
+from leap.mx import net, log ## xxx implement log
 
 
 def checkIPaddress(addr):
@@ -38,6 +38,10 @@ def checkIPaddress(addr):
         return False
     else:
         return True
+
+def query_couch(file_desc):
+    if not os.path.isfile (file_desc):
+
 
 class PostfixAliasResolver(postfix.PostfixTCPMapServer):
     """
@@ -89,7 +93,8 @@ class PostfixAliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactor
         super(postfix.PostfixTCPMapDeferringDictServerFactory, 
               self).__init__(data=data)
         self.timeout = timeout
-        self.noisy = False ## xxx get config value
+        ## xxx get config value, should be something like verbose = no
+        self.noisy = False
 
         try:
             assert isinstance(port, int), "Port number must be an integer"
