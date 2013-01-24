@@ -13,35 +13,83 @@ Classes for resolving postfix aliases.
 
 import os
 
-from twisted.internet  import address
-from twisted.mail      import maildir, alias
-from twisted.protocols import postfix
+try:
+    from paisley import client
+except ImportError:
+    print "This software requires paisley. Please see the README file"
+    print "for instructions on getting required dependencies."
+
+try:
+    from twisted.internet  import address, defer, reactor
+    from twisted.mail      import maildir, alias
+    from twisted.protocols import postfix
+except ImportError:
+    print "This software requires paisley. Please see the README file"
+    print "for instructions on getting required dependencies."
 
 from leap.mx import net, log ## xxx implement log
 
 
-def checkIPaddress(addr):
+class ConnectedCouchDB(client.CouchDB):
     """
-    Check that a given string is a valid IPv4 or IPv6 address.
+    Connect to a CouchDB instance.
 
-    @param addr:
-        Any string defining an IP address, i.e. '0.0.0.0', '::1', or '1.2.3.4'.
-    @returns:
-        True if :param:`addr` defines a valid IPAddress, False otherwise.
+    ## xxx will we need to open CouchDB documents and views?
     """
-    import ipaddr
+    def __init__(self, host, port, dbName=None, 
+                 username=None, password=None, *args, **kwargs):
+        """
+        Connect to a CouchDB instance.
 
-    try:
-        check = ipaddr.IPAddress(addr)
-    except ValueError, ve:
-        log.warn(ve.message)
-        return False
-    else:
-        return True
+        @param host: A hostname string for the CouchDB server.
+        @param port: The port of the CouchDB server, as an integer.
+        @param dbName: (optional) The default database to connect to.
+        @param username: (optional) The username for authorization.
+        @param password: (optional) The password for authorization.
+        @returns: A :class:`twisted.internet.defer.Deferred` representing the
+                  the client connection to the CouchDB instance.
+        """
+        super(client.CouchDB, self).__init__(host, port,
+                                             dbName=dbName,
+                                             username=username,
+                                             password=password,
+                                             *args, **kwargs)
 
-def query_couch(file_desc):
-    if not os.path.isfile (file_desc):
+    def query(self, uri):
+        """
+        Query a CouchDB instance that we are connected to.
+        """
+        try:
+            self.checkURI(uri) ## xxx write checkURI()
+            ## xxx we might be able to use self._parseURI()
+        except SchemeNotSupported, sns: ## xxx where in paisley is this?
+            log.exception(sns) ## xxx need log.exception()
 
+        d = self.get(uri)
+        @d.addCallback
+        def parse_answer(answer):
+            return answer
+
+        return answer
+
+    @defer.inlineCallbacks
+    def listUsersAndEmails(self, limit=1000, reverse=False):
+        """
+        List all users and email addresses, up to the given limit.
+        """
+        query = "/users/_design/User/_view/by_email_or_alias/?reduce=false"
+        answer = yield self.query(query, limit=limit, reverse=reverse)
+        
+        if answer:
+            parsed = yield self.parseResult(answer)
+            if parsed:
+                log.msg("%s" % parsed)
+            else:
+                log.msg("No answer from database, perhaps there are no users.")
+        else:
+            log.msg("Problem querying CouchDB instance...")
+            log.debug("Host: %s" % host)
+            log.debug("Port: %d" % port)
 
 class PostfixAliasResolver(postfix.PostfixTCPMapServer):
     """
@@ -61,6 +109,7 @@ class PostfixAliasResolver(postfix.PostfixTCPMapServer):
         to resolve.
         """
         super(postfix.PostfixTCPMapServer, self).__init__(*args, **kwargs)
+
 
 class PostfixAliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
     """
@@ -102,7 +151,7 @@ class PostfixAliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactor
         except AssertionError, ae:
             raise SystemExit(ae.message)
 
-        if checkIPaddress(addr):
+        if net.checkIPaddress(addr):
             self.addr = address._IPAddress('TCP', addr, int(port))
         else:
             log.debug("Using default address for Postfix: 127.0.0.1:%s" % port)
