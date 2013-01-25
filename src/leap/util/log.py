@@ -10,11 +10,13 @@ Logging for leap_mx.
 @copyright: 2013 Isis Agora Lovecruft
 '''
 
+from datetime  import datetime
 from functools import wraps
 
 import logging
 import os
 import sys
+import time
 import traceback
 
 from twisted.python import log  as txlog
@@ -24,8 +26,13 @@ from twisted.python.failure import Failure
 
 from leap.util import version, config
 
+## xxx TODO finish docstrings
+
+class InvalidTimestampFormat(Exception):
+    pass
 
 class UnprefixedLogfile(txlog.FileLogObserver):
+    """Logfile with plain messages, without timestamp prefixes."""
     def emit(self, eventDict):
         text = txlog.textFromEventDict(eventDict)
         if text is None:
@@ -34,6 +41,29 @@ class UnprefixedLogfile(txlog.FileLogObserver):
         txutil.untilConcludes(self.write, "%s\n" % text)
         txutil.untilConcludes(self.flush)
 
+
+def utcDateNow():
+    """The current date for UTC time."""
+    return datetime.utcnow()
+
+def utcTimeNow():
+    """Seconds since epoch in UTC time, as type float."""
+    return time.mktime(time.gmtime())
+
+def dateToTime(date):
+    """Convert datetime to seconds since epoch."""
+    return time.mktime(date.timetuple())
+
+def prettyDateNow():
+    """Pretty string for the local time."""
+    return datetime.now().ctime()
+
+def utcPrettyDateNow():
+    """Pretty string for utc time."""
+    return datetime.utcnow().ctime()
+
+def timeToPrettyDate(time_val):
+    return time.ctime(time_val)
 
 def start(logfile=None, application_name=None):
     if not application_name:
