@@ -35,6 +35,9 @@ class ConnectedCouchDB(client.CouchDB):
     Connect to a CouchDB instance.
 
     ## xxx will we need to open CouchDB documents and views?
+    ## yes, these are in a _design document
+    ## 
+    
     """
     def __init__(self, host, port, dbName=None, 
                  username=None, password=None, *args, **kwargs):
@@ -54,6 +57,38 @@ class ConnectedCouchDB(client.CouchDB):
                                              username=username,
                                              password=password,
                                              *args, **kwargs)
+        if dbName:
+            self.bindToDB(dbName)
+        else:
+            databases = self.listDB()
+            log.msg("Available databases: %s" % databases)
+
+    def queryByEmailOrAlias(self, alias, dbDoc="User",
+                            view="by_email_or_alias"):
+        """
+        Check to see if a particular email or alias exists.
+
+        @param alias: A string representing the email or alias to check.
+        @param dbDoc: The CouchDB document to open.
+        @param view: The view of the CouchDB document to use.
+        """
+        assert isinstance(alias, str), "Email or alias queries must be string"
+
+        ## Prepend a forward slash, in case we forgot it:
+        if not alias.startswith('/'):
+            alias = '/' + alias
+
+        d = self.openDoc(dbDoc)
+        d.addCallbacks(self.openView, log.err, (view))
+        d.addCallbacks(self.get, log.err, (alias))
+        d.addCallbacks(self.parseResult, log.err)
+
+        @d.addCallback
+        def show_answer(result):
+            log.msg("Query: %s" % alias)
+            log.msg("Answer: %s" % alias)
+
+        return d
 
     def query(self, uri):
         """
