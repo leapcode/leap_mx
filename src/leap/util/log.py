@@ -26,7 +26,6 @@ from twisted.python.failure import Failure
 
 from leap.util import version, config
 
-## xxx TODO finish docstrings
 
 class InvalidTimestampFormat(Exception):
     pass
@@ -59,13 +58,21 @@ def prettyDateNow():
     return datetime.now().ctime()
 
 def utcPrettyDateNow():
-    """Pretty string for utc time."""
+    """Pretty string for UTC."""
     return datetime.utcnow().ctime()
 
 def timeToPrettyDate(time_val):
+    """Convert seconds since epoch to date."""
     return time.ctime(time_val)
 
 def start(logfile=None, application_name=None):
+    """
+    Start logging to stdout, and optionally to a logfile as well.
+
+    @param logfile: The filename to store logs in, which is placed in
+                    /leap_mx/logs/.
+    @param application_name: The name of the running application.
+    """
     if not application_name:
         application_name = version.name
     print "application name: %s" % application_name
@@ -86,24 +93,28 @@ def start(logfile=None, application_name=None):
     txlog.msg("Starting %s on %s (%s UTC)" % (application_name, 
                                               prettyDateNow(),
                                               utcPrettyDateNow()))
-    ## xxx need these functions! ^^
 
 def msg(msg, *arg, **kwarg):
+    """Log a message at the INFO level."""
     print "[*] %s" % msg
 
 def debug(msg *arg, **kwarg):
+    """Log a message at the DEBUG level."""
     if config.basic.debug:
         print "[d] %s" % msg
 
 def warn(msg, *arg, **kwarg):
+    """Log a message at the WARN level."""
     if config.basic.show_warnings:
         txlog.logging.captureWarnings('true')
         print "[#] %s" % msg
 
 def err(msg, *arg, **kwarg):
+    """Log a message at the ERROR level."""
     print "[!] %s" % msg
 
 def fail(*failure):
+    """Log a message at the CRITICAL level."""
     logging.critical(failure)
     ## xxx should we take steps to exit here?
 
