@@ -15,12 +15,6 @@ import os
 import uuid
 
 try:
-    from paisley import client
-except ImportError:
-    print "This software requires paisley. Please see the README file"
-    print "for instructions on getting required dependencies."
-
-try:
     from twisted.internet  import address, defer, reactor
     from twisted.mail      import maildir, alias
     from twisted.protocols import postfix
@@ -43,104 +37,52 @@ def createID(alias):
     """
     return uuid.uuid5(uuid.NAMESPACE_URL, str(alias))
 
-
-class ConnectedCouchDB(client.CouchDB):
+class StatusCodes(object):
     """
-    Connect to a CouchDB instance.
+    The Postfix manual states:
 
-    ## xxx will we need to open CouchDB documents and views?
-    ## yes, these are in a _design document
-    ## 
-    
+        The request completion status is one of OK, RETRY, NOKEY (lookup
+        failed because the key was not found), BAD (malformed request) or DENY
+        (the table is not approved for proxy read or update access).
+
+    Other SMTP codes: http://www.greenend.org.uk/rjk/tech/smtpreplies.html
     """
-    def __init__(self, host, port, dbName=None, 
-                 username=None, password=None, *args, **kwargs):
-        """
-        Connect to a CouchDB instance.
+    OK    = "OK Others might say 'HELLA AWESOME'...but we're not convinced."
+    RETRY = "RETRY Server is busy plotting revolution; requests might take a while."
+    BAD   = "BAD bad Leroy Brown, baddest man in the whole...er. Malformed request."
+    NOKEY = "NOKEY Couldn't find your keys, sorry. Did you check in the sofa?"
+    DEFER = "DEFER_IF_LOCAL xxx fill me in"
+    DENY  = "DENY no gurlz aloud in teh tree house."
+    FAIL  = "FAIL xxx fill me in"
 
-        @param host: A hostname string for the CouchDB server.
-        @param port: The port of the CouchDB server, as an integer.
-        @param dbName: (optional) The default database to connect to.
-        @param username: (optional) The username for authorization.
-        @param password: (optional) The password for authorization.
-        @returns: A :class:`twisted.internet.defer.Deferred` representing the
-                  the client connection to the CouchDB instance.
-        """
-        super(client.CouchDB, self).__init__(host, port,
-                                             dbName=dbName,
-                                             username=username,
-                                             password=password,
-                                             *args, **kwargs)
-        if dbName:
-            self.bindToDB(dbName)
-        else:
-            databases = self.listDB()
-            log.msg("Available databases: %s" % databases)
+    fakeSMTPCodes = { '250': OK,
+                      '300': RETRY,
+                      '500': BAD,
+                      '550': NOKEY,
+                      '552': DEFER,
+                      '553': DENY,
+                      '554': FAIL, }
 
-    def queryByEmailOrAlias(self, alias, dbDoc="User",
-                            view="by_email_or_alias"):
-        """
-        Check to see if a particular email or alias exists.
+    def __init__(self, status_code=None):
+        """xxx fill me in"""
+        if status_code:
+            self.get(status_code)
 
-        @param alias: A string representing the email or alias to check.
-        @param dbDoc: The CouchDB document to open.
-        @param view: The view of the CouchDB document to use.
-        """
-        assert isinstance(alias, str), "Email or alias queries must be string"
+    def get(self, status_code=None)
+        """xxx fill me in"""
+        if status_code:
+            if isinstance(status_code, str):
+                return status_code, getattr(self, status_code.upper(), None)
+            elif isinstance(status_code, int):
+                for k, v in self.fake_smtp_codes.items():
+                    ## we want to return None if it's 550
+                    if k == str(status_code) and k != '550':
+                        return status_code, v
+                log.debug("%s" % self.NOKEY)
+                return None, ''
 
-        ## Prepend a forward slash, in case we forgot it:
-        if not alias.startswith('/'):
-            alias = '/' + alias
 
-        d = self.openDoc(dbDoc)
-        d.addCallbacks(self.openView, log.err, (view))
-        d.addCallbacks(self.get, log.err, (alias))
-        d.addCallbacks(self.parseResult, log.err)
-
-        @d.addCallback
-        def show_answer(result):
-            log.msg("Query: %s" % alias)
-            log.msg("Answer: %s" % alias)
-
-        return d
-
-    def query(self, uri):
-        """
-        Query a CouchDB instance that we are connected to.
-        """
-        try:
-            self.checkURI(uri) ## xxx write checkURI()
-            ## xxx we might be able to use self._parseURI()
-        except SchemeNotSupported, sns: ## xxx where in paisley is this?
-            log.exception(sns) ## xxx need log.exception()
-
-        d = self.get(uri)
-        @d.addCallback
-        def parse_answer(answer):
-            return answer
-
-        return answer
-
-    @defer.inlineCallbacks
-    def listUsersAndEmails(self, limit=1000, reverse=False):
-        """
-        List all users and email addresses, up to the given limit.
-        """
-        query = "/users/_design/User/_view/by_email_or_alias/?reduce=false"
-        answer = yield self.query(query, limit=limit, reverse=reverse)
-        
-        if answer:
-            parsed = yield self.parseResult(answer)
-            if parsed:
-                log.msg("%s" % parsed)
-            else:
-                log.msg("No answer from database, perhaps there are no users.")
-        else:
-            log.msg("Problem querying CouchDB instance...")
-            log.debug("Host: %s" % host)
-            log.debug("Port: %d" % port)
-
-class PostfixAliasResolver(postfix.PostfixTCPMapServer):
+class AliasResolver(postfix.PostfixTCPMapServer):
     """
     Resolve postfix aliases, similarly to using "$ postmap -q <alias>".
 
