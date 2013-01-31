@@ -19,7 +19,7 @@ try:
     from twisted.mail      import maildir, alias
     from twisted.protocols import postfix
 except ImportError:
-    print "This software requires paisley. Please see the README file"
+    print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
 
 from leap.mx import net, log ## xxx implement log
