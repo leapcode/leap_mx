@@ -11,6 +11,7 @@ Version information for leap_mx.
 '''
 
 import os
+import sys
 
 from twisted.python import versions
 
@@ -20,13 +21,44 @@ authors = [('Isis Agora Lovecruft', '<isis@leap.se>', '0x2cdb8b35'),]
 git_url = 'https://github.com/isislovecruft/leap_mx/'
 website = 'https://leap.se'
 
+PLATFORMS = {'LINUX': sys.platform.startswith("linux"),
+             'OPENBSD': sys.platform.startswith("openbsd"),
+             'FREEBSD': sys.platform.startswith("freebsd"),
+             'NETBSD': sys.platform.startswith("netbsd"),
+             'DARWIN': sys.platform.startswith("darwin"),
+             'SOLARIS': sys.platform.startswith("sunos"),
+             'WINDOWS': sys.platform.startswith("win32")}
+
+def getClientPlatform(platform_name=None):
+    """
+    Determine the client's operating system platform. Optionally, if
+    :param:`platform_name` is given, check that this is indeed the platform
+    we're operating on.
+
+    @param platform_name: A string, upper-, lower-, or mixed case, of one of
+        the keys in the :attr:`leap.util.version.PLATFORMS` dictionary. E.g.
+        'Linux' or 'OPENBSD', etc.
+    @returns: A string specifying the platform name, and the boolean test used
+        to determine it.
+    """
+    for name, test in PLATFORMS.items():
+        if not platform_name or platform_name.upper() == name:
+            if test:
+                return name, test
+
 def getVersion():
+    """
+    Returns a version object, with attributes authors, git_url, and website.
+    """
     version.authors = authors
     version.git_url = git_url
     version.website = website
     return version
 
 def getRepoDir():
+    """
+    Get the top-level repository directory.
+    """
     here = os.getcwd()
     base = here.rsplit(name, 1)[0]
     repo = os.path.join(base, name)
