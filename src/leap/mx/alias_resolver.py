@@ -17,8 +17,7 @@ TODO:
 
     o alias.ProcessAlias()
 
-## have uuid, need to get gpg keyid
-## have key, make crypto
+## have uuid -> get gpg keyid
 
 alias.ProcessAlias('/path/to/mail_reciever', *args)
 
@@ -38,7 +37,7 @@ except ImportError:
 from leap.mx.util import net, log, config, exceptions
 
 
-def aliasToUUID(alias):
+def createUUID(alias):
     """
     Creates Universal Unique ID by taking the SHA-1 HASH of an email alias:
 
@@ -108,7 +107,7 @@ class AliasResolver(postfix.PostfixTCPMapServer):
 
     Resources:
     http://www.postfix.org/proxymap.8.html
-    https://www.iana.org/assignments/smtp-enhanced-status-codes/smtp-enhanced-status-codes.txt
+    https://www.iana.org/assignments/smtp-enhanced-status-codes/
     """
     def __init__(self, *args, **kwargs):
         """Create a server which listens for Postfix aliases to resolve."""
@@ -130,10 +129,6 @@ class AliasResolver(postfix.PostfixTCPMapServer):
             d = defer.maybeDeferred(self.factory.get, key)
             d.addCallbacks(self._cbGot, self._cbNot)
             d.addErrback(log.err)
-
-    def do_query(self, key):
-        """Make a query to resolve an alias."""
-        self.do_get(self, key)
 
     @defer.inlineCallbacks
     def do_put(self, keyAndValue):
@@ -164,6 +159,30 @@ class AliasResolver(postfix.PostfixTCPMapServer):
         xxx not sure if this is a good idea...
         """
         raise NotImplemented
+
+    def check_recipient_access(self, key):
+        """Make a query to resolve an alias."""
+        self.do_get(self, key)
+
+    def virtual_alias_map(self, key):
+        """
+        Get the Universal Unique ID for the alias address. If
+        virtual_transport is True, then suffix the UUID with a domain.
+
+        xxx I don't think we actually need couchdb for this, the UUID is an
+        identifier, not an authenticator. And the SHA1 should always be the
+        same, so unless it's considered to expensive to compute (less than
+        querying a database, I would presume), it seems silly to do this.
+
+        Instead, we should query CouchDB with the UUID to get the GPG keyid.
+        """
+        ## xxx need email address parser
+        client_id = createUUID(key)
+
+        if self.virtual_transport:
+            return client.get_urn() + '@example.com'
+        else: 
+            return client.get_urn()
 
     def _cbGot(self, value):
         """Callback for self.get()"""
