@@ -221,17 +221,34 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         if net.checkIPaddress(addr):
             self.addr = address._IPAddress('TCP', addr, int(port))
         else:
-            log.debug("Using default address for Postfix: 127.0.0.1:%s" % port)
+            log.msg("Using default address: 127.0.0.1:%s" % port)
             self.addr = address._IPAddress('TCP', '127.0.0.1', int(port))
+
+        log.msg("To configure Postfix to query this alias_resolver,")
+        log.msg("you should do:")
+        log.msg("    $ postconf -e 'check_recipient_access = tcp:%s:%d"
+                % (addr, port))
 
     def buildProtocol(self):
         """
-        Create an instance of the :class:`PostfixAliasResolver` server.
+        Create an instance of the :class:`AliasResolver` server.
         """
         proto = self.protocol()
         proto.timeout = self.timeout
         proto.factory = self
         return proto
+
+    def get(self, *args, **kwargs):
+        """
+        xxx connect me to the couchdb
+        """
+        pass
+
+    def put(self, *args, **kwargs):
+        """
+        xxx connect me to the couchdb
+        """
+        pass
 
 
 if __name__ == "__main__":
