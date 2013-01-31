@@ -50,6 +50,23 @@ def _create_config_file(file):
 # =======
 # Configurable options for the leap_mx encrypting mail exchange.
 #
+# This file follows YAML markup format: http://yaml.org/spec/1.2/spec.html
+# Keep in mind that indentation matters.
+#
+
+basic:
+    # Where is the spoolfile of messages to encrypt?:
+    spoolfile: /var/mail/encrypt_me
+advanced:
+    # Which port on localhost should postfix send check_recipient queries to?:
+    check_recipient_access_port: 1347
+    # Which port on localhost should postfix ask for UUIDs?:
+    virtual_alias_map_port: 1348
+    # Enable debugging output in the logger:
+    debug: true
+    # Print enough things really fast to make you look super 1337:
+    noisy: false
+
 """)
         conf.flush()
     try:
