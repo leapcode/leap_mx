@@ -12,6 +12,7 @@ Classes for resolving postfix aliases.
 '''
 
 import os
+import uuid
 
 try:
     from paisley import client
@@ -28,6 +29,19 @@ except ImportError:
     print "for instructions on getting required dependencies."
 
 from leap.mx import net, log ## xxx implement log
+
+
+def createID(alias):
+    """
+    Creates Universal Unique ID by taking the SHA-1 HASH of an email alias:
+
+        >>> uuid.uuid5(uuid.NAMESPACE_URL, "isis@leap.se")
+        UUID('7194878e-4aea-563f-85a4-4f58519f3c4f')
+
+    @param alias: An email address alias.
+    @returns: A :class:`uuid.UUID` containing attributes specifying the UUID.
+    """
+    return uuid.uuid5(uuid.NAMESPACE_URL, str(alias))
 
 
 class ConnectedCouchDB(client.CouchDB):
