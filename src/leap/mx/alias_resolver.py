@@ -22,10 +22,10 @@ except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
 
-from leap.mx import net, log ## xxx implement log
+from leap.mx.util import net, log, config, exceptions
 
 
-def createID(alias):
+def aliasToUUID(alias):
     """
     Creates Universal Unique ID by taking the SHA-1 HASH of an email alias:
 
@@ -91,50 +91,113 @@ class AliasResolver(postfix.PostfixTCPMapServer):
     query the local Postfix server. You can test it with:
 
         $ ./alias_resolver.py &
-        $ /usr/bin/postmap -q <key> tcp:localhost:4242
+        $ /usr/bin/postmap -q <key> tcp:localhost:1347
 
+    Resources:
+    http://www.postfix.org/proxymap.8.html
+    https://www.iana.org/assignments/smtp-enhanced-status-codes/smtp-enhanced-status-codes.txt
     """
     def __init__(self, *args, **kwargs):
-        """
-        Create a local LineReceiver server which listens for Postfix aliases
-        to resolve.
-        """
+        """Create a server which listens for Postfix aliases to resolve."""
         super(postfix.PostfixTCPMapServer, self).__init__(*args, **kwargs)
+        self.status_codes = StatusCodes()
+
+    def sendCode(self, code, message=None):
+        """Send an SMTP-like code with a message."""
+        if not message:
+            message = self.status_codes.get(code)
+        self.sendLine('%3.3d %s' % (code, message or ''))
+
+    def do_get(self, key):
+        """Make a query to resolve an alias."""
+        if key is None:
+            self.sendCode(500)
+            log.warn("Command 'get' takes one parameter.")
+        else:
+            d = defer.maybeDeferred(self.factory.get, key)
+            d.addCallbacks(self._cbGot, self._cbNot)
+            d.addErrback(log.err)
+
+    def do_query(self, key):
+        """Make a query to resolve an alias."""
+        self.do_get(self, key)
+
+    @defer.inlineCallbacks
+    def do_put(self, keyAndValue):
+        """Add a key and value to the database, provided it does not exist."""
+        if keyAndValue is None:
+            self.sendCode(500)
+            log.warn("Command 'put' takes two parameters.")
+        else:
+            try:
+                key, value = keyAndValue.split(None, 1)
+            except ValueError:
+                self.sendCode(500)
+                log.warn("Command 'put' takes two parameters.")
+            else:
+                alreadyThere = yield self.do_query(key)
+                if alreadyThere is None:
+                    d = defer.maybeDeferred(self.factory.put, key, value)
+                    d.addCallbacks(self._cbPut, self._cbPout)
+                    d.addCallbacks(log.err)
+                else:
+                    self.sendCode(553)
+
+    @defer.inlineCallbacks
+    def do_delete(self, key):
+        """
+        Delete an alias from the mapping database.
+
+        xxx not sure if this is a good idea...
+        """
+        raise NotImplemented
+
+    def _cbGot(self, value):
+        """Callback for self.get()"""
+        if value is None:
+            self.sendCode(550)
+        else:
+            self.sendCode(250, quote(value))
+
+    def _cbNot(self, fail):
+        """Errback for self.get()"""
+        self.sendCode(554, fail.getErrorMessage())
+
+    def _cbPut(self, value):
+        """xxx fill me in"""
+        pass
+
+    def _cbPout(self, fail):
+        """xxx fill me in"""
+        pass
 
 
-class PostfixAliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
+class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
     """
-    A Factory for creating PostfixAliasResolver servers, which handles inputs
+    A Factory for creating :class:`AliasResolver` servers, which handles inputs
     and outputs, and keeps an in-memory mapping of Postfix aliases in the form
-    of a dict.
+    of a dictionary.
 
     xxx fill me in
-
     """
-    protocol = PostfixAliasResolver
+    protocol = AliasResolver
 
     def __init__(self, addr='127.0.0.1', port=4242, timeout=120, data=None):
         """
-        Create a Factory which returns :class:`PostfixAliasResolver` servers.
+        Create a Factory which returns :class:`AliasResolver` servers.
 
-        @param addr:
-            (optional) A string giving the IP address of the Postfix server.
+        @param addr: A string giving the IP address of this server.
             Default: '127.0.0.1'
-        @param port:
-            (optional) An integer that specifies the port number of the
-            Postfix server. Default: 4242
-        @param timeout:
-            (optional) An integer specifying the number of seconds to wait
+        @param port: An integer that specifies the port number to listen
+            on. Default: 4242
+        @param timeout: An integer specifying the number of seconds to wait
             until we should time out. Default: 120
-        @param data:
-            (optional) A dict to use to initialise or update the alias
-            mapping.
+        @param data: A dict to use to initialise or update the alias mapping.
         """
-        super(postfix.PostfixTCPMapDeferringDictServerFactory, 
+        super(postfix.PostfixTCPMapDeferringDictServerFactory,
               self).__init__(data=data)
         self.timeout = timeout
-        ## xxx get config value, should be something like verbose = no
-        self.noisy = False
+        self.noisy = True if config.advanced.noisy else False
 
         try:
             assert isinstance(port, int), "Port number must be an integer"
