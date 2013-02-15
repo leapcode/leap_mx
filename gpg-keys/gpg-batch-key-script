@@ -1,0 +1,45 @@
+%echo Generating keypair 001/003...
+Key-Type: RSA
+Key-Length: 4096
+Subkey-Type: RSA
+Subkey-Length: 4096
+Name-Real: Louis Lingg
+Name-Email: blackhole@leap.se
+Name-Comment: Test Key 001/003
+Expire-Date: 2013-03-15
+Passphrase: leap
+%pubring generated-2013-02-15_19-15-001.pub
+%secring generated-2013-02-15_19-15-001.sec
+%commit
+%echo done. 001 keys out of 003 completed.
+
+%echo Generating keypair 002/003...
+Key-Type: RSA
+Key-Length: 4096
+Subkey-Type: RSA
+Subkey-Length: 4096
+Name-Real: Louis Lingg
+Name-Email: blackhole@leap.se
+Name-Comment: Test Key 002/003
+Expire-Date: 2013-03-15
+Passphrase: leap
+%pubring generated-2013-02-15_19-15-002.pub
+%secring generated-2013-02-15_19-15-002.sec
+%commit
+%echo done. 002 keys out of 003 completed.
+
+%echo Generating keypair 003/003...
+Key-Type: RSA
+Key-Length: 4096
+Subkey-Type: RSA
+Subkey-Length: 4096
+Name-Real: Louis Lingg
+Name-Email: blackhole@leap.se
+Name-Comment: Test Key 003/003
+Expire-Date: 2013-03-15
+Passphrase: leap
+%pubring generated-2013-02-15_19-15-003.pub
+%secring generated-2013-02-15_19-15-003.sec
+%commit
+%echo done. 003 keys out of 003 completed.
+
