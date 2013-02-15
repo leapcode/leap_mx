@@ -16,24 +16,27 @@
 import os, sys
 
 
+package_source   = "/src"
 application_name = "leap_mx"
 
 def __get_repo_dir__():
     """Get the absolute path of the top-level repository directory."""
     here = os.getcwd()
-    base = here.rsplit(application_name, 1)[0]
-    repo = os.path.join(base, application_name)
-    return repo
+    repo = here.rsplit(package_source, 1)[0]
+    leap = os.path.join(repo, package_source)
+    this = os.path.join(leap, application_name.replace('_', '/'))
+    return repo, leap, this
 
 ## Set the $PYTHONPATH:
-src_dir = os.path.join(__get_repo_dir__(), 'src/')
+repo, leap, this = __get_repo_dir__()
+srcdir = os.path.join(repo, 'src/')
 sys.path[:] = map(os.path.abspath, sys.path)
-sys.path.insert(0, src_dir)
+sys.path.insert(0, leap)
 
 ## Now we should be able to import ourselves without installation:
 try:
-    from mx   import runner
-    from util import log, version
+    from leap.mx      import runner
+    from leap.mx.util import log, version
 except ImportError, ie:
     print "%s\nExiting..." % ie.message
     sys.exit(1)
@@ -119,8 +122,8 @@ dependency_check = CheckRequirements(pipfile='pkg/mx-requirements.pip')
 try:
     from twisted.python   import usage, runtime
     from twisted.internet import reactor
-except:
-    print "the CheckRequirements class is broken!"
+except ImportError, ie:
+    print "CheckRequirements class is broken!:", ie.message
 
 
 if __name__ == "__main__":
