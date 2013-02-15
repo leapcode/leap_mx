@@ -1,0 +1,209 @@
+#!/bin/bash
+##############################################################################
+#
+# gpg-key-generator
+# -------------------
+# Create batch processed keys for dummy users in the CouchDB, for testing.
+# see
+# www.gnupg.org/documentation/manuals/gnupg-devel/Unattended-GPG-key-generation.html
+# for syntax specification.
+#
+# @author Isis Agora Lovecruft, 0x2cdb8b35
+# @date 11 February 2013
+# @version 0.1.0
+##############################################################################
+
+
+here="${PWD}"
+test_dir="${here}/gpg-keys" 
+batch_file="${test_dir}/gpg-batch-key-script"
+default_keypair_password="leap"
+default_keypair_email="blackhole@leap.se"
+
+function usage () 
+{
+    echo -e "\033[40m\033[36m Usage: $0 [-n <N> [-c|-a]] | [-d|-h]\033[0m"
+    echo -e "\033[40m\033[36m --------------------------------------------------------\033[0m"
+    echo -e "\033[40m\033[36m Creates a set of GPG dummy keys for unittesting purposes.\033[0m"
+    echo
+    echo -e "\033[40m\033[36m Keys will be created in ${test_dir}, \033[0m"
+    echo -e "\033[40m\033[36m and a GnuPG batch file named ${batch_file##*/} \033[0m"
+    echo -e "\033[40m\033[36m will also be created in that same directory. \033[0m"
+    echo -e "\033[40m\033[36m The default password to all keys is: "'"'"${default_keypair_passwd}"'"'" \033[0m"
+    echo
+    echo -e "\033[40m\033[36m Options:\033[0m"
+    echo -e "\033[40m\033[36m -n,--number <N>  Number of keys (to create/append) \033[0m"
+    echo -e "\033[40m\033[36m -c,--create      Create a fresh set of N test keys \033[0m"
+    echo -e "\033[40m\033[36m -a,--append      Append another set of N test keys \033[0m"
+    echo -e "\033[40m\033[36m -d,--delete      Delete the test keys and directory\033[0m"
+    echo -e "\033[40m\033[36m -h,--help        This cruft\033[0m"
+}
+
+## @param $1: the filename to write to
+## @param $2: the directory to place test keys and batch files in
+## @param $3: the number of keypairs to create
+function write_gpg_batch_file () 
+{
+    ## if the test directory doesn't exist, create it:
+    if ! test -w "${1}" ; then
+        if ! test -d "${2}"; then 
+            mkdir $2
+        fi
+    fi
+
+    # if the batch file is already there, ask to back it up:
+    if test -r "${1}" ; then
+        read -ers -N 1 -t 60 \
+            -p"Should we keep a backup copy the previous batch file? (Y/n) " bak
+        case $bak in
+            n|N ) echo -e "\033[40m\033[31m Overwriting ${1}...\033[0m" ;;
+            * )   iii=0
+                  backup="${1}.${iii}-"$(date +"%F")".bak"
+                  while ! test -r "$backup" ; do
+                      echo -e"\033[40m\033[36m Backing up to: \033[0m"
+                      echo -e"\033[40m\033[36m   ${backup} \033[0m"
+                      cp $1 $backup
+                      iii=$(( $iii + 1 ))
+                  done ;;
+        esac
+        ## then always delete the old otherwise we'll append to that and generate
+        ## the previous batch's keys too:
+        ! test -r "${1}" || rm $1
+    fi
+    
+    ## and whether we backed up or not, make our file if it doesn't exist:
+    if ! test -w "${1}" ; then
+        touch $1 && chmod +rw $1
+    fi
+    echo -e "\033[40m\033[36m Writing GPG key generation batch file to: \033[0m"
+    echo -e "\033[40m\033[36m ${1}... \033[0m"
+
+    total_keypairs=$(printf "%03d" ${3})
+    echo "Total keypairs to be generated: ${total_keypairs}"
+
+    this_month=$(date +"%m") #                  ## this is awkward...isn't there
+    expire_soon=$(( ${this_month} + 1 ))        ## a better way?
+    next_month=$(printf "%02d" ${expire_soon})
+    expiry_date=$(date +"%Y-")${next_month}$(date +"-%d")
+    echo "Expiry date for keypairs: ${expiry_date}"
+
+    for i in $(seq -f "%03g" 1 $3 ) ; do
+        now=$(date +"%Y-%m-%d_%H-%M")
+        echo "Writing generation parameters for keypair #${i}..."
+        cat >> $1 <<EOF
+%echo Generating keypair ${i}/${total_keypairs}...
+Key-Type: RSA
+Key-Length: 4096
+Subkey-Type: RSA
+Subkey-Length: 4096
+Name-Real: Louis Lingg
+Name-Email: $default_keypair_email
+Name-Comment: Test Key ${i}/${total_keypairs}
+Expire-Date: $expiry_date
+Passphrase: $default_keypair_password
+%pubring generated-${now}-${i}.pub
+%secring generated-${now}-${i}.sec
+%commit
+%echo done. $i keys out of ${total_keypairs} completed.
+
+EOF
+    done
+}
+
+## @param $1: the filename to write to
+## @param $2: the directory to place test keys and batch files in
+function run_gpg_batch_file ()
+{
+    our_gpg=$(which gpg)
+
+    if ! test -r "${batch_file}" ; then
+        echo -e "\033[40m\033[31m Could not find ${batch_file}. Exiting...\033[0m"
+        exit 1
+    fi
+
+    if test -z "$our_gpg" ; then
+        echo -e "\033[40m\033[31m Could not find gnupg. Exiting...\033[0m"
+        exit 1
+    fi
+
+    if test -n "${our_gpg}" ; then
+        cd ${2} && $($our_gpg --batch --gen-key ${1})
+    fi
+}
+
+## @param $1: the test dir
+function delete_batch_keys ()
+{
+    if test -d "$1" ; then
+        read -ers -N 1 -t 60 \
+            -p'Delete the current GPG test keys directory? (Y/n) ' delkeys
+        if test -n "$delkeys" ; then
+            case $delkeys in
+                n|N ) 
+                    echo -e "\033[40m\033[31m Skipping deletion. \033[0m" ;;
+                *)  
+                    echo -e "\033[40m\033[36m Deleting old test keys...\033[0m"
+                    if test -d "$1" ; then
+                        rm -r $1
+                    else
+                        echo -e "\033[40m\033[31m Cannot delete: $1\033[0m"
+                    fi ;;
+            esac
+        fi
+    fi
+}
+
+function finish () 
+{
+    cat<<FIN
+To use the generated GnuPG keys, assuming you do not wish to use
+the default keyrings in your home directory, you should do: 
+
+  \$ useradd -N -m keytester
+  \$ cd ${test_dir}
+  \$ for key in \`find . -name "generated-*"\`; do chown keytester:$USER \$key; done 
+  \$ for key in \`find . -name *.sec\`; do chown keytester:$USER \$key; done 
+  \$ sudo -i -u keytester
+  \$ cd ${test_dir}
+  \$ for key in \`find . -name "generated-*"\`; do gpg --import \$key; done 
+  \$ gpg --list-keys
+
+FIN
+}
+
+## main
+if [[ "$#" > 0 ]] ; then
+    SHORTS="hcadn:"
+    LONGS="help,create,append,destroy,number:"
+    ARGS=$(getopt -s bash --options $SHORTS --longoptions $LONGS \
+        --name ${0##*/} -- "$@")
+
+    if [ $? != 0 ] ; then
+        echo -e "\033[40m\033[31m Unable to parse options. \033[0m">&2
+        exit 1
+    fi
+    eval set -- "$ARGS"
+    while test -n "$1" ; do
+        case $1 in
+            -n|--number )  export CREATE_N="$2"
+                           if test -z "$CREATE_N"; then CREATE_N="3"; fi;
+                           shift 2 ;;
+            -c|--create )  delete_batch_keys ${test_dir}
+                           write_gpg_batch_file ${batch_file} ${test_dir} \
+                               ${CREATE_N}
+                           run_gpg_batch_file ${batch_file} ${test_dir}
+                           shift ;;
+            -a|--append )  run_gpg_batch_file ${batch_file} ${test_dir}
+                           shift ;;
+            -d|--destroy ) delete_batch_keys ${test_dir} ; shift ;;
+            --)            shift ; break ;;
+            * )            usage ; shift ;;
+        esac
+    done
+    finish
+else
+    usage
+fi
+
+unset here test_dir batch_file CREATE_N
+
