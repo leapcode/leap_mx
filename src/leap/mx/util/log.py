@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''
 log.py
@@ -21,10 +20,10 @@ import traceback
 
 from twisted.python import log  as txlog
 from twisted.python import util as txutil
-from twisted.python.logfile import DailyLogFile
+from twisted.python import logfile as txlogfile
 from twisted.python.failure import Failure
 
-from leap.util import version, config
+from leap.mx.util import version, config
 
 
 class InvalidTimestampFormat(Exception):
@@ -65,34 +64,24 @@ def timeToPrettyDate(time_val):
     """Convert seconds since epoch to date."""
     return time.ctime(time_val)
 
-def start(logfile=None, application_name=None):
+def start(logfilename=None, logfiledir=None):
     """
     Start logging to stdout, and optionally to a logfile as well.
 
-    @param logfile: The filename to store logs in, which is placed in
-                    /leap_mx/logs/.
-    @param application_name: The name of the running application.
+    @param logfile: The full path of the filename to store logs in.
     """
-    if not application_name:
-        application_name = version.name
-    print "application name: %s" % application_name
-
-    daily_logfile = None
-
-    if not logfile:
-        logfile = config.basic.logfile
-
-    repo_dir = version.getRepoDir()
-    logfile_dir = os.path.join(repo_dir, 'log')
-    logfile_name = logfile
-
-    daily_logfile = DailyLogFile(logfile_name, logfile_dir)
-
     txlog.startLoggingWithObserver(UnprefixedLogfile(sys.stdout).emit)
-    txlog.addObserver(txlog.FileLogObserver(daily_logfile).emit)
-    txlog.msg("Starting %s on %s (%s UTC)" % (application_name, 
-                                              prettyDateNow(),
-                                              utcPrettyDateNow()))
+
+    if logfilename and logfiledir:
+        if not os.path.isdir(logfiledir):
+            os.makedirs(logfiledir)
+        daily_logfile = txlogfile.DailyLogFile(logfilename, logfiledir)
+        txlog.addObserver(txlog.FileLogObserver(daily_logfile).emit)
+
+    txlog.msg("Starting %s, version %s, on %s UTC" % (version.getPackageName(),
+                                                      version.getVersion(),
+                                                      utcPrettyDateNow()))
+    txlog.msg("Authors: %s" % version.getAuthors())
 
 def msg(msg, *arg, **kwarg):
     """Log a message at the INFO level."""
