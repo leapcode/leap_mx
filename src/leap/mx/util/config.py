@@ -34,12 +34,13 @@ from os import path as ospath
 import sys
 import yaml
 
-## xxx only install/import this in *nix
-from xdg import BaseDirectory
+from leap.mx.util       import version, storage
+from leap.mx.exceptions import MissingConfig, UnsupportedOS
 
-from leap.util import log, version, Storage
-from leap.util.exceptions import MissingConfig, UnsupportedOS
 
+filename = None
+basic    = storage.Storage()
+advanced = storage.Storage()
 
 def _create_config_file(file):
     """
