@@ -102,12 +102,21 @@ advanced:
 """)
         conf.flush()
 
-def _get_config_filename(filename=None, use_dot_config_directory=False):
+    assert ospath.isfile(conffile), "Config file %s not created!" % conffile
+
+def _get_config_location(config_filename=None,
+                         use_dot_config_directory=False):
     """
     Get the full path and filename of the config file.
     """
-    platform = version.getClientPlatform()[0]
-    resource = version.name
+    platform = getClientPlatform()[0]
+
+    ## If not given, default to the application's name + '.conf'
+    if not config_filename:
+        if not filename:
+            config_filename = "mx.conf"
+        else:
+            config_filename = filename
 
     ## Oh hell, it could be said only to beguile:
     ## That windoze users are capable of editing a .conf file.
@@ -118,34 +127,30 @@ def _get_config_filename(filename=None, use_dot_config_directory=False):
     if not platform.endswith('LINUX') and not platform.endswith('BSD'):
         raise UnsupportedOS("Sorry, your operating system isn't supported.")
 
-    ## If not given, default to the application's name + '.conf'
-    if not filename:
-        filename = resource + ".conf"
-
     where = None
-    if not use_dot_config_directory:
-        repo_dir = version.getRepoDir()
-        where = os.path.abspath(repo_dir)
-    ## Use ~/.config/ instead:
-    else:
+    if use_dot_config_directory:
+        ## xxx only install/import this in *nix
+        from xdg import BaseDirectory
+
         dot_config_dirs = BaseDirectory.xdg_config_dirs
         for dir in dot_config_dirs:
-            our_dir = os.path.join(dir, resource)
-            if os.path.isdir(our_dir):
-                if filename in os.listdir(our_dir):
-                    where = os.path.abspath(our_dir)
-        if not where:
-            where = BaseDirectory.save_config_path(resource)
+            our_dir = ospath.join(dir, package_name)
+            if ospath.isdir(our_dir):
+                if config_filename in os.listdir(our_dir):
+                    where = ospath.abspath(our_dir)
+    ## Use repo dir instead:
+    if not where:
+        where = version.getRepoDir()
 
-    conffile = os.path.join(where, filename)
+    conffile = ospath.join(where, config_filename)
     try:
         with open(conffile) as cf: pass
     except IOError:
-        conffile = _create_config_file(conffile)
+        _create_config_file(conffile)
     finally:
         return conffile
 
-def loadConfig(filename=config_filename):
+def loadConfig(file=None):
     """
     Some of this is taken from OONI config code for now, and so this should be
     refacotored, along with the leap_client config code, so that we have
@@ -155,13 +160,13 @@ def loadConfig(filename=config_filename):
 
     Excuse the yaml for now, I just wanted something that works.
 
-    @param filename: (optional) If provided, use this filename.
+    @param file: (optional) If provided, use this filename.
     """
-    if not filename:
-         filename = _get_config_filename()
+    if not file:
+         file = _get_config_location()
 
-    if os.path.isfile(filename):
-        with open(filename, 'a+') as conf:
+    if ospath.isfile(file):
+        with open(file, 'a+') as conf:
             config_contents = '\n'.join(conf.readlines())
             configuration = yaml.safe_load(config_contents)
 
