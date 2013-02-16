@@ -16,7 +16,7 @@ import socket
 
 from random import randint
 
-from leap.mx.utils import log
+from leap.mx.util import log
 
 
 PLATFORMS = {'LINUX': sys.platform.startswith("linux"),
