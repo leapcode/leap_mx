@@ -29,7 +29,9 @@ the section names. Like this:
 @license: see included LICENSE file
 """
 
-import os
+from os import path as ospath
+
+import sys
 import yaml
 
 ## xxx only install/import this in *nix
