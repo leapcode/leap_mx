@@ -89,7 +89,7 @@ def msg(msg, *arg, **kwarg):
 
 def debug(msg, *arg, **kwarg):
     """Log a message at the DEBUG level."""
-    if config.basic.debug:
+    if config.advanced.debug:
         print "[d] %s" % msg
 
 def warn(msg, *arg, **kwarg):
