@@ -41,5 +41,7 @@ nosetests.xml
 *~
 \#*\#
 
-# Ignore client logfiles
+# Ignore client logfiles and configs
 *.log
+*.conf
+*.config
