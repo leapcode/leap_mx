@@ -42,11 +42,36 @@ filename = None
 basic    = storage.Storage()
 advanced = storage.Storage()
 
-def _create_config_file(file):
+PLATFORMS = {'LINUX': sys.platform.startswith("linux"),
+             'OPENBSD': sys.platform.startswith("openbsd"),
+             'FREEBSD': sys.platform.startswith("freebsd"),
+             'NETBSD': sys.platform.startswith("netbsd"),
+             'DARWIN': sys.platform.startswith("darwin"),
+             'SOLARIS': sys.platform.startswith("sunos"),
+             'WINDOWS': sys.platform.startswith("win32")}
+
+def getClientPlatform(platform_name=None):
+    """
+    Determine the client's operating system platform. Optionally, if
+    :param:`platform_name` is given, check that this is indeed the platform
+    we're operating on.
+
+    @param platform_name: A string, upper-, lower-, or mixed case, of one
+              of the keys in the :attr:`leap.util.version.PLATFORMS`
+              dictionary. E.g.  'Linux' or 'OPENBSD', etc.
+    @returns: A string specifying the platform name, and the boolean test
+              used to determine it.
+    """
+    for name, test in PLATFORMS.items():
+        if not platform_name or platform_name.upper() == name:
+            if test:
+                return name, test
+
+def _create_config_file(conffile):
     """
     xxx fill me in
     """
-    with open(file, 'w+') as conf:
+    with open(conffile, 'w+') as conf:
         conf.write("""
 #
 # mx.conf
@@ -72,12 +97,6 @@ advanced:
 
 """)
         conf.flush()
-    try:
-        assert os.path.isfile(file), "Config file %s not created!" % file
-    except AssertionError, ae:
-        raise SystemExit(ae.message)
-    else:
-        return file
 
 def _get_config_filename(filename=None, use_dot_config_directory=False):
     """
@@ -147,14 +166,12 @@ def loadConfig(filename=config_filename):
             ##     from leap.util import config
             ##     config.basic.foo = bar
             ##
-            basic = Storage()
             try:
                 for k, v in configuration['basic'].items():
                     basic[k] = v
             except AttributeError:
                 pass
 
-            advanced = Storage()
             try:
                 for k, v in configuration['advanced'].items():
                     advanced[k] = v
@@ -168,8 +185,7 @@ def loadConfig(filename=config_filename):
 
 ## This is the name of the config file to use:
 ## If not set, it defaults to 'leap_mx/leap_mx.conf'
-if not config_filename:
-    config_filename = _get_config_filename()
+if not filename:
+    filename = _get_config_location()
 else:
-    config_filename = _get_config_filename(filename=config_filename)
-
+    filename = _get_config_location(config_filename=filename)
