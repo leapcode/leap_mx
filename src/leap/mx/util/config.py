@@ -83,6 +83,10 @@ def _create_config_file(conffile):
 #
 
 basic:
+    # Whether or not to log to file:
+    enable_logfile: True
+    # The name of the logfile:
+    logfile: mx.log
     # Where is the spoolfile of messages to encrypt?:
     spoolfile: /var/mail/encrypt_me
 advanced:
@@ -91,9 +95,9 @@ advanced:
     # Which port on localhost should postfix ask for UUIDs?:
     virtual_alias_map_port: 1348
     # Enable debugging output in the logger:
-    debug: true
+    debug: True
     # Print enough things really fast to make you look super 1337:
-    noisy: false
+    noisy: False
 
 """)
         conf.flush()
