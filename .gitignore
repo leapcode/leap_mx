@@ -40,3 +40,6 @@ nosetests.xml
 # Ignore emacs temporary files
 *~
 \#*\#
+
+# Ignore client logfiles
+*.log
