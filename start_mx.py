@@ -34,6 +34,13 @@ def __get_dirs__():
     ours = ospath.join(leap, application_name.replace('_', '/'))
     return repo, leap, ours
 
+## py3k check, snagged from python-gnupg-0.3.2 by Vinay Sajip
+try:
+    unicode
+    _py3k = False
+except NameError:
+    _py3k = True
+
 ## Set the $PYTHONPATH:
 repo, leap, ours = __get_dirs__()
 sys.path[:] = map(ospath.abspath, sys.path)
