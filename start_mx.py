@@ -63,58 +63,52 @@ except ImportError, ie:
 
 
 class MXOptions(usage.Options):
-    """
-    Command line options for leap_mx.
-    """
-    #longdesc = str("  ")
+    """Command line options for leap_mx."""
+
     optParameters = [
-        ['config', 'c', 'mx.conf', 'Config file to use'],]
+        ['config', 'c', 'mx.conf', 'Config file to use']]
     optFlags = [
         ['all-tests', 'a', 'Run all unittests'],
-        ['verbose', 'v', 'Increase logging verbosity'],]
+        ['verbose', 'v', 'Increase logging verbosity']]
 
     def opt_version(self):
-        """
-        Print leap_mx version and exit
-        """
-        print("Version: %s" % version.getVersion())
+        """Print leap_mx version and exit."""
+        print("Authors:   %s" % version.getAuthors())
+        print("Licence:   AGPLv3, see included LICENSE file")
+        print("Copyright: © 2013 Isis Lovecruft, see included COPYLEFT file")
+        print("Version:   %s" % version.getVersion())
         sys.exit(0)
 
-    def opt_help(self):
-        """
-        Print this cruft
-        """
-        import __main__
-        print("%s" % __main__.__doc__)
-        self.getUsage()
-
     def opt_spewer(self):
-        """
-        Print *all of the things*. Useful for debugging.
-        """
+        """Print *all of the things*. Useful for debugging."""
         sys.settrace(spewer)
 
     def parseArgs(self):
-        """
-        Called with the remaining commandline options which were unrecognised.
-        """
+        """Called with the remaining unrecognised commandline options."""
         log.warn("Couldn't recognise option: %s" % self)
 
 
 if __name__ == "__main__":
     dependency_check = runner.CheckRequirements(version.getPackageName(),
                                                 version.getPipfile())
+    ## the following trickery is for printing the module docstring
+    ## *before* the options help, and printing it only once:
+    import __main__
+    print("%s" % __main__.__doc__)
+    __main__.__doc__ = ("""
+Example Usage:
+  $ start_mx.py --config="./my-mx.conf" --spewer
+""")
+
     mx_options = MXOptions()
     if len(sys.argv) <= 1:
         mx_options.opt_help()
         sys.exit(0)
-
     try:
         mx_options.parseOptions()
-    except UsageError, ue:
+    except usage.UsageError, ue:
         print("%s" % ue.message)
         sys.exit(1)
-
     options = mx_options.opts
 
     ## Get the config settings:
