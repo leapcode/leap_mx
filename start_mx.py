@@ -10,12 +10,11 @@
            | and is part of the Leap Encryption Access |
            | Project platform.                         |
            |___________________________________________|
-
-    authors:   Isis Agora Lovecruft, <isis@leap.se> 0x2cdb8b35
-    license:   AGPLv3, see included LICENCE file.
-    copyright: copyright (c) 2013 Isis Agora Lovecruft
-
 """
+    # authors:   Isis Agora Lovecruft, <isis@leap.se> 0x2cdb8b35
+    # license:   AGPLv3, see included LICENCE file.
+    # copyright: copyright (c) 2013 Isis Agora Lovecruft
+
 
 from __future__ import print_function
 from os         import getcwd
