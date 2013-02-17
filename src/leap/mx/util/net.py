@@ -16,7 +16,7 @@ import socket
 
 from random import randint
 
-from leap.mx.utils import log
+from leap.mx.util import log
 
 
 PLATFORMS = {'LINUX': sys.platform.startswith("linux"),
@@ -37,6 +37,23 @@ class IfaceError(Exception):
 class PermissionsError(SystemExit):
     """This test requires admin or root privileges to run. Exiting..."""
 
+
+def checkIPaddress(addr):
+    """
+    Check that a given string is a valid IPv4 or IPv6 address.
+
+    @param addr: Any string defining an IP address, i.e. '1.2.3.4' or '::1'.
+    @returns: True if :param:`addr` defines a valid IPAddress, else False.
+    """
+    import ipaddr
+
+    try:
+        check = ipaddr.IPAddress(addr)
+    except ValueError, ve:
+        log.warn(ve.message)
+        return False
+    else:
+        return True
 
 def getClientPlatform(platform_name=None):
     for name, test in PLATFORMS.items():

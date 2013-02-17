@@ -36,3 +36,12 @@ nosetests.xml
 
 # Don't upload private things
 *.private
+
+# Ignore emacs temporary files
+*~
+\#*\#
+
+# Ignore client logfiles and configs
+*.log
+*.conf
+*.config
