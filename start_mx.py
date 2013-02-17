@@ -138,8 +138,8 @@ Example Usage:
         failure.traceupLength = 7
         failure.startDebugMode()
 
-    if options['test']:
-        from leap.mx import tests ## xxx this needs an __init__.py
+    if options['all-tests']:
+        from leap.mx import tests
         tests.run()
     else:
         mx_options.getUsage()
