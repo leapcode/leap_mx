@@ -38,9 +38,11 @@ from leap.mx.util       import version, storage
 from leap.mx.exceptions import MissingConfig, UnsupportedOS
 
 
-filename = None
-basic    = storage.Storage()
-advanced = storage.Storage()
+filename       = None
+config_version = None
+basic          = storage.Storage()
+couch          = storage.Storage()
+advanced       = storage.Storage()
 
 PLATFORMS = {'LINUX': sys.platform.startswith("linux"),
              'OPENBSD': sys.platform.startswith("openbsd"),
@@ -69,7 +71,9 @@ def getClientPlatform(platform_name=None):
 
 def _create_config_file(conffile):
     """
-    xxx fill me in
+    Create the config file if it doesn't exist.
+
+    @param conffile: The full path to the config file to write to.
     """
     with open(conffile, 'w+') as conf:
         conf.write("""
@@ -89,6 +93,15 @@ basic:
     logfile: mx.log
     # Where is the spoolfile of messages to encrypt?:
     spoolfile: /var/mail/encrypt_me
+couch:
+    # The couch username for authentication to a CouchDB instance:
+    user: admin
+    # The couch username's password:
+    passwd: passwd
+    # The CouchDB hostname or IP address to connect to:
+    host: couchdb.example.com
+    # The CouchDB port to connect to:
+    port: 7001
 advanced:
     # Which port on localhost should postfix send check_recipient queries to?:
     check_recipient_access_port: 1347
@@ -98,10 +111,10 @@ advanced:
     debug: True
     # Print enough things really fast to make you look super 1337:
     noisy: False
+config_version: 0.0.2
 
 """)
         conf.flush()
-
     assert ospath.isfile(conffile), "Config file %s not created!" % conffile
 
 def _get_config_location(config_filename=None,
@@ -168,26 +181,34 @@ def loadConfig(file=None):
     if ospath.isfile(file):
         with open(file, 'a+') as conf:
             config_contents = '\n'.join(conf.readlines())
-            configuration = yaml.safe_load(config_contents)
+            cfg = yaml.safe_load(config_contents)
 
             ## These become objects with their keys loaded as attributes:
             ##
             ##     from leap.util import config
             ##     config.basic.foo = bar
             ##
-            try:
-                for k, v in configuration['basic'].items():
+            try: 
+                for k, v in cfg['basic'].items(): 
                     basic[k] = v
-            except AttributeError:
-                pass
+            except (AttributeError, KeyError): pass
 
-            try:
-                for k, v in configuration['advanced'].items():
+            try: 
+                for k, v in cfg['advanced'].items(): 
                     advanced[k] = v
-            except AttributeError:
-                pass
+            except (AttributeError, KeyError): pass
 
-            return basic, advanced
+            try: 
+                for k, v in cfg['couch'].items(): 
+                    couch[k] = v
+            except (AttributeError, KeyError): pass
+
+            if 'config_version' in cfg:
+                config_version = cfg['config_version']
+            else:
+                config_version = 'unknown'
+
+            return basic, couch, advanced, config_version
     else:
         raise MissingConfig("Could not load config file.")
 
