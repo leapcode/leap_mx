@@ -55,8 +55,10 @@ except ImportError, ie:
     sys.exit(1)
 
 try:
+    from twisted.internet    import defer
     from twisted.python      import usage, runtime, failure
     from twisted.python.util import spewer
+    from twisted.scripts     import trial
 except ImportError, ie:
     print("This software requires Twisted>=12.0.2, please see the README for")
     print("help on using virtualenv and pip to obtain requirements.")
@@ -66,10 +68,14 @@ class MXOptions(usage.Options):
     """Command line options for leap_mx."""
 
     optParameters = [
+        ['test', 't', None, 'Run a specific unittest'],
         ['config', 'c', 'mx.conf', 'Config file to use']]
     optFlags = [
         ['all-tests', 'a', 'Run all unittests'],
-        ['verbose', 'v', 'Increase logging verbosity']]
+        ['debug', 'x', 'Enable debug mode for deferreds'],
+        ['debug-stacktraces', 'y', 'Enable stacktraces on deferreds'],
+        ['force-gc', 'g', 'Force garbase collection between unittests']]
+    
 
     def opt_version(self):
         """Print leap_mx version and exit."""
@@ -133,12 +139,17 @@ Example Usage:
               % (application_name, runtime.shortPythonVersion(),
                  runtime.platform.getType(), thread_support))
 
-    if options['verbose']:
+    if options['debug']:
         config.basic.debug = True
         failure.traceupLength = 7
         failure.startDebugMode()
-
-    if options['all-tests']:
+    if options['debug'] or options['debug-stacktraces']:
+        defer.setDebugging(True)
+    
+    if options['test']:
+        if ospath.isfile(options['test']):
+            trial_runner = runner.TestRunner(options)
+    elif options['all-tests']:
         from leap.mx import tests
         tests.run()
     else:
