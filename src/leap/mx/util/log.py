@@ -9,6 +9,8 @@ Logging for leap_mx.
 @copyright: 2013 Isis Agora Lovecruft
 '''
 
+from __future__ import print_function
+
 from datetime  import datetime
 from functools import wraps
 
@@ -85,22 +87,22 @@ def start(logfilename=None, logfiledir=None):
 
 def msg(msg, *arg, **kwarg):
     """Log a message at the INFO level."""
-    print "[*] %s" % msg
+    print("[*] %s" % msg)
 
 def debug(msg, *arg, **kwarg):
     """Log a message at the DEBUG level."""
     if config.advanced.debug:
-        print "[d] %s" % msg
+        print("[d] %s" % msg)
 
 def warn(msg, *arg, **kwarg):
     """Log a message at the WARN level."""
     if config.basic.show_warnings:
         txlog.logging.captureWarnings('true')
-        print "[#] %s" % msg
+        print("[#] %s" % msg)
 
 def err(msg, *arg, **kwarg):
     """Log a message at the ERROR level."""
-    print "[!] %s" % msg
+    print("[!] %s" % msg)
 
 def fail(*failure):
     """Log a message at the CRITICAL level."""

@@ -87,6 +87,8 @@ def _create_config_file(conffile):
 #
 
 basic:
+    # Should we print warnings to stdout and, if enabled, the logfile?:
+    show_warnings: True
     # Whether or not to log to file:
     enable_logfile: True
     # The name of the logfile:
@@ -111,7 +113,7 @@ advanced:
     debug: True
     # Print enough things really fast to make you look super 1337:
     noisy: False
-config_version: 0.0.2
+config_version: 0.0.3
 
 """)
         conf.flush()
