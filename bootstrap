@@ -1,0 +1,59 @@
+#!/bin/bash
+##############################################################################
+#
+# bootstrap
+# -----------------------
+# Setup a virtualenv, without ever using sudo.
+#
+# @author Isis Agora Lovecruft, 0x2cdb8b35
+# @date 18 February 2013
+# @version 0.0.1
+##############################################################################
+
+set -ex --
+
+PYTHON=$(which python)
+GIT=$(which git)
+
+VENV_VERSION=1.8.4
+VENV_URL=https://pypi.python.org/packages/source/v/virtualenv
+VENV_TARBALL=virtualenv-${VENV_VERSION}.tar.gz
+
+VENV_WRAPPER_VERSION=3.6
+VENV_WRAPPER_URL=https://pypi.python.org/packages/source/v/virtualenvwrapper
+VENV_WRAPPER_TARBALL=virtualenvwrapper-${VENV_WRAPPER_VERSION}.tar.gz
+
+BOOTSTRAP_ENV=.bootstrap
+BOOTSTRAP_OPTS='--no-site-packages --setuptools --unzip-setuptools --never-download'
+
+PACKAGE_NAME=leap_mx
+PACKAGE_URL=https://github.com/isislovecruft/leap_mx.git
+PACKAGE_WORKON=${PWD}/${PACKAGE_NAME}
+PACKAGE_REQUIREMENTS=${PACKAGE_WORKON}/pkg/mx-requirements.pip
+PACKAGE_OPTS=${BOOTSTRAP_OPTS}'' ## xxx add parameter for extra options
+
+echo 'Downloading virtualenv source from'
+echo "${VENV_URL}..."
+\wget -O ${VENV_TARBALL} ${VENV_URL}/${VENV_TARBALL}
+tar xvzf ${VENV_TARBALL} 
+
+echo 'Downloading virtualenv-wrapper source from:'
+echo "${VENV_WRAPPER_URL}"
+\wget -O $VENV_WRAPPER_TARBALL ${VENV_WRAPPER_URL}/${VENV_WRAPPER_TARBALL}
+tar xvzf virtualenvwrapper-${VENV_WRAPPER_VERSION}.tar.gz
+
+
+echo 'Creating initial virtualenv bootstrap environment, called "bootstrap"'
+echo 'in which we will install virtualenv, to avoid using sudo.'
+$PYTHON virtualenv-${VENV_VERSION}/virtualenv.py $BOOTSTRAP_OPTS $BOOTSTRAP_ENV
+rm -rf virtualenv-${VENV_VERSION}
+${BOOTSTRAP_ENV}/bin/pip install ${VENV_TARBALL}
+echo 'Installing virtualenvwrapper in "bootstrap" virtualenv...'
+${BOOTSTRAP_ENV}/bin/pip install ${VENV_WRAPPER_TARBALL}
+
+echo 'Using "bootstrap" virtualenv to create project virtualenv...'
+source ${BOOTSTRAP_ENV}/local/bin/virtualenvwrapper.sh
+echo "Cloning from ${PACKAGE_URL}..."
+${GIT} clone ${PACKAGE_URL} ${PACKAGE_NAME}
+mkvirtualenv -a $PROJECT_WORKON -r ${PACKAGE_REQUIREMENTS} \
+    ${PACKAGE_OPTS} ${PACKAGE_NAME}
