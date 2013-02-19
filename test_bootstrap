@@ -1,0 +1,39 @@
+#!/bin/bash
+##############################################################################
+#
+# test_bootstrap
+# --------------
+# Test that the bootstrap script works correctly by making a temporary new
+# user.
+#
+# @author Isis Agora Lovecruft, 0x2cdb8b35
+# @date 18 February 2013
+# @version 0.0.1
+##############################################################################
+
+set -ex -
+
+HERE=$(pwd)
+TEST_USER=bootstraptester
+
+echo "Creating new user: "'"'"${TEST_USER}"'"'""
+sudo adduser --home /home/${TEST_USER} --shell /bin/bash ${TEST_USER} && \
+    echo -e "notsecure\nnotsecure\n" | sudo passwd ${TEST_USER}
+
+echo 'Copying boostrap script to new user home directory...'
+sudo cp ${HERE}/bootstrap /home/${TEST_USER}/bootstrap && \
+    sudo chown ${TEST_USER}:${TEST_USER} /home/${TEST_USER}/bootstrap
+
+echo 'Logging in as new user and executing bootstrap script...'
+echo 'Executing test of bootstrap script...'
+## -S pulls password from stdin
+echo -e "notsecure\n" | sudo -S -H -u ${TEST_USER} -i /home/${TEST_USER}/bootstrap
+
+if [[ "$?" != 0 ]] ; then
+    echo 'Error while testing bootstrap...'
+else
+    echo 'Test of bootstrap successful.'
+fi
+
+echo "Deleting user: "'"'"${TEST_USER}"'"'""
+sudo deluser --remove-home ${TEST_USER}
