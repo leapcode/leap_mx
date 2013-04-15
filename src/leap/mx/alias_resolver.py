@@ -32,14 +32,16 @@ from leap.mx.util import net, log, config, exceptions
 
 
 def createUUID(alias):
-    """
-    Creates Universal Unique ID by taking the SHA-1 HASH of an email alias:
+    """Creates Universal Unique ID by taking the SHA1 HASH of an email alias:
 
-        >>> uuid.uuid5(uuid.NAMESPACE_URL, "isis@leap.se")
-        UUID('7194878e-4aea-563f-85a4-4f58519f3c4f')
+    >>> uuid.uuid5(uuid.NAMESPACE_URL, "isis@leap.se")
+    UUID('7194878e-4aea-563f-85a4-4f58519f3c4f')
 
-    @param alias: An email address alias.
-    @returns: A :class:`uuid.UUID` containing attributes specifying the UUID.
+    TODO: Is there a commonly accepted way to check that an email address
+          is valid?
+
+    :param str alias: An email address alias.
+    :returns: A :class:`uuid.UUID` containing attributes specifying the UUID.
     """
     return uuid.uuid5(uuid.NAMESPACE_URL, str(alias))
 
