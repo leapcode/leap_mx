@@ -174,6 +174,10 @@ class AliasResolver(postfix.PostfixTCPMapServer):
     http://www.postfix.org/proxymap.8.html
     https://www.iana.org/assignments/smtp-enhanced-status-codes/
     """
+
+    virtual_transport = '@example.com'
+    use_virtual_transport = False
+
     def __init__(self, *args, **kwargs):
         """Create a server which listens for Postfix aliases to resolve.
 
@@ -262,31 +266,13 @@ class AliasResolver(postfix.PostfixTCPMapServer):
         :returns: The UUID of the user.
         """
         ## xxx need email address parser
-        client_id = createUUID(key)
+        userid = createUUID(key)
 
-        if self.virtual_transport:
-            return client.get_urn() + '@example.com'
-        else: 
-            return client.get_urn()
-
-    def _cbGot(self, value):
-        """Callback for self.get()"""
-        if value is None:
-            self.sendCode(550)
+        if self.use_virtual_transport \
+                and isinstance(self.virtual_transport, str):
+            return userid.get_urn() + self.virtual_transport
         else:
-            self.sendCode(250, quote(value))
-
-    def _cbNot(self, fail):
-        """Errback for self.get()"""
-        self.sendCode(554, fail.getErrorMessage())
-
-    def _cbPut(self, value):
-        """xxx fill me in"""
-        pass
-
-    def _cbPout(self, fail):
-        """xxx fill me in"""
-        pass
+            return userid.get_urn()
 
 
 class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
@@ -314,6 +300,8 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         super(postfix.PostfixTCPMapDeferringDictServerFactory,
               self).__init__(data=data)
         self.timeout = timeout
+        self.virtual_transport = virtual_transport
+        self.use_virtual_transport = use_virtual_transport
         self.noisy = True if config.advanced.noisy else False
 
         try:
@@ -339,6 +327,8 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         """
         proto = self.protocol()
         proto.timeout = self.timeout
+        proto.virtual_transport = self.virtual_transport
+        proto.use_virtual_transport = self.use_virtual_transport
         proto.factory = self
         return proto
 
