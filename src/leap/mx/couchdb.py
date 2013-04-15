@@ -109,12 +109,14 @@ class ConnectedCouchDB(client.CouchDB):
 
     @defer.inlineCallbacks
     def listUsersAndEmails(self, limit=1000, reverse=False):
-        """
-        List all users and email addresses, up to the given limit.
+        """List all users and email addresses, up to the given limit.
+
+        :param int limit: The number of results to limit the response to.
+        :param bool reverse: Start at the end of the database mapping.
         """
         query = "/users/_design/User/_view/by_email_or_alias/?reduce=false"
         answer = yield self.query(query, limit=limit, reverse=reverse)
-        
+
         if answer:
             parsed = yield self.parseResult(answer)
             if parsed:
