@@ -259,7 +259,7 @@ class AliasResolver(postfix.PostfixTCPMapServer):
 
         :param str key: An email address to look up in the CouchDB.
         """
-        self.do_get(key)
+        return self.do_get(key)
 
     def virtual_alias_map(self, key):
         """Get the Universal Unique ID for the alias address. If
