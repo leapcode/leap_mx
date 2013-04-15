@@ -101,15 +101,23 @@ class StatusCodes(object):
     NOKEY = "NOKEY Couldn't find your keys, sorry. Did you check in the sofa?"
     DEFER = "DEFER_IF_LOCAL xxx fill me in"
     DENY  = "DENY no gurlz aloud in teh tree house."
-    FAIL  = "FAIL xxx fill me in"
+    FAIL  = "FAIL this belongs on the failblog"
 
-    fakeSMTPCodes = { '250': OK,
-                      '300': RETRY,
-                      '500': BAD,
-                      '550': NOKEY,
-                      '552': DEFER,
-                      '553': DENY,
-                      '554': FAIL, }
+    SMTPCodes = { '200': OK,
+                  '400': RETRY,
+                  '500': BAD,
+                  '550': NOKEY,
+                  '552': DEFER,
+                  '553': DENY,
+                  '554': FAIL, }
+
+    SMTPStrings = { 'OK' 200,
+                    'RETRY': 400,
+                    'BAD': 500,
+                    'NOKEY': 550,
+                    'DEFER': 552,
+                    'DENY': 553,
+                    'FAIL': 554, }
 
     def __init__(self, status_code=None):
         """xxx fill me in"""
