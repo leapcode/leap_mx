@@ -45,6 +45,10 @@ def createUUID(alias):
     """
     return uuid.uuid5(uuid.NAMESPACE_URL, str(alias))
 
+
+class DatabaseNotConnected(Exception):
+    """Raised when not currently connected to a database."""
+
 class StatusCodes(object):
     """
     The Postfix manual states:
