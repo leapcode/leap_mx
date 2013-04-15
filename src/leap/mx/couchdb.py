@@ -26,11 +26,10 @@ from leap.mx.util import log
 
 
 class ConnectedCouchDB(client.CouchDB):
-    """
-    Connect to a CouchDB instance.
+    """Connect to a CouchDB instance.
 
-    ## xxx will we need to open CouchDB documents and views?
-    ## yes, these are in a _design document
+    CouchDB document for testing is '_design', and the view is simply
+    a preconfigured set of mapped responses.
     """
     def __init__(self, host, port, dbName=None, username=None,
                  password=None, *args, **kwargs):
