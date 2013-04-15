@@ -38,7 +38,6 @@ incoming mx servers will run postfix, configured in a particular way:
  2. more SMTP checks: valid hostnames, etc.
     (pass) accepted, proceed to next step.
     (fail) return SMTP error, which bounces email.
-
  3. check_recipient_access -- look up each recipient and ensure they are
  allowed to receive messages.
     (pass) empty result, proceed to next step.
@@ -61,11 +60,9 @@ Questions:
    simple command that was responsible for safely saving the file to disk. a
    third possibility would be to have a local long running daemon that spoke
    lmtp that postfix forward the message on to for delivery.
-
  * if virtual_alias_maps comes after check_recipient_access, then a user with
    aliases set but who is over quota will not be able to forward email. i think
    this is fine.
-
  * if we are going to support forwarding, we should ensure that the message
    gets encrypted before getting forwarded. so, postfix should not do any
    forwarding. instead, this should be the job of mail_receiver.
@@ -78,12 +75,11 @@ Considerations:
  load of email postfix should not be waiting on the mail receiver but must be
  able to pass the message off quickly and have the slower mail receiver churn
  through the backlog as best it can.
-
  2. don't lose messages: It is important to not lose any messages when there is
  a problem. So, generally, a copy of an email should always exist in some spool
  somewhere, and that copy should not be deleted until there is confirmation
  that the next stage has succeeded.
-
+ 
 ## alias_resolver ##
 ------------------------------
 The alias_resolver will be a daemon running on MX servers that handles lookups
@@ -99,18 +95,18 @@ Communication with:
  cluster. [directly accessing the couch->https://we.riseup.net/leap+platform/querying-the-couchdb]
  might help getting started.
 
-Discussion:
+### Discussion: ###
 
- * we want the lookups to be fast. using views in couchdb, these should be very
-   fast. when using bigcouch, we can make it faster by specifying a read quorum
-   of 1 (instead of the default 2). this will make it so that only a single
-   couchdb needs to be queried to find the result. i don't know if this would
-   cause problems, but aliases don't change very often.
+ 1. we want the lookups to be fast. using views in couchdb, these should be
+   very fast. when using bigcouch, we can make it faster by specifying a read
+   quorum of 1 (instead of the default 2). this will make it so that only a
+   single couchdb needs to be queried to find the result. i don't know if this
+   would cause problems, but aliases don't change very often.
 
 alias_resolver will be responsible for two map lookups in postfix:
 
-### check_recipient ###
-
+#### check_recipient ####
+-------------------------
 postfix config:
 
 @check_recipient_access tcp:localhost:1000@
@@ -126,12 +122,12 @@ recipient's mailbox is full. If you can contact them another way, you may wish
 to tell them of this problem.  
 ```
 
-"DEFER_IF_PERMIT" will let the other MX known that this error is temporary and
+"DEFER_IF_PERMIT" will let the other MX know that this error is temporary and
 that they should try again soon. Typically, an MX will try repeatedly, at
 longer and longer intervals, for four days before giving up.
 
-### virtual alias map ###
-
+#### virtual alias map ####
+---------------------------
 postfix config:
 
 @virtual_alias_map tcp:localhost:1001@
@@ -148,6 +144,56 @@ suffix, i think postfix will use the 'default transport'. if we want it to use
 the virtual transport instead, we should append the domain (eg
 id_123456@example.org). see
 http://www.postfix.org/ADDRESS_REWRITING_README.html#resolve
+
+
+### Current status: ### 
+The current implementation of alias_resolver is in
+leap-mx/src/leap/mx/alias_resolver.py.
+
+The class ```alias_resolver.StatusCodes``` deals with creating SMTP-like
+response messages for Postfix, speaking Postfix's TCP Map protocol (from item
+#1).
+
+As for Discussion item #1: 
+
+It might be possible to use
+[python-memcached](https://pypi.python.org/pypi/python-memcached/) as an
+interface to a [memcached](http://memcached.org/) instance to speed up database
+lookups, by keeping an in memory mapping of recent request/response
+pairs. Also, Twisted now (I think as of 12.0.0) ships with a protocol for
+handling Memcached servers, this is in ```twisted.protocols.memcache```. This
+should be prioritised for later, if it is decided that querying the CouchDB is
+too expensive or time-consuming.
+
+Thus far, to speed up alias lookup, an in-memory mapping of alias<->resolution
+pairs is created by ```alias_resolver.AliasResolverFactory()```, which can be
+optionally seeded with a dictionary of ```{ 'alias': 'resolution' }``` pairs
+by doing:
+~~~~~~
+>>> from leap.mx import alias_resolver
+>>> aliasResolverFactory = alias_resolver.AliasResolverFactory(
+...      addr='1.2.3.4', port=4242, data={'isis': 'isis@leap.se',
+...                                       'drebs': 'drebs@leap.se'})
+>>> aliasResolver = aliasResolverFactory.buildProtocol()
+>>> aliasResolver.check_recipient_access('isis')
+200 OK Others might say 'HELLA AWESOME'...but we're not convinced.
+~~~~~~
+
+TODO:
+ 1. The AliasResolverFactory needs to be connected to the CouchDB. The
+ classmethod in which this should occur is ```AliasResolverFactory.get()```.
+
+ 2. I am not sure where to get the user's UUID from (Soledad?). Wherever we get
+ it from, it will need to be returned in
+ ```AliasResolver.virtual_alias_map()```, and if we want Postfix to hear about
+ it, then that response will need to be fed into ```AliasResolver.sendCode```.
+ 
+ 3. Other than those two things, I think everything is done. The only potential
+ other thing I can think of is that the codes in
+ ```alias_resolver.StatusCodes``` might need to be urlencoded for Postfix to
+ accept them, but this is like two lines of code from urllib.
+
+
 
 ## mail_receiver ##
 
@@ -184,3 +230,9 @@ discussion:
  * whenever possible, we should refer to the user by a fixed id, not their
    username, because we want to support the ability to change usernames. so,
    for example, database names should not be based on usernames.
+
+### Current Status: ###
+None of this is done, although having it be a separate daemon sound weird.
+
+You would probably want to use ```twisted.mail.mail.FileMonitoringService``` to
+watch the mailbox (is the mailbox virtual or a maildir or mbox or?)
