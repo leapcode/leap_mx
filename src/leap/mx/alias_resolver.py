@@ -288,26 +288,48 @@ class AliasResolver(postfix.PostfixTCPMapServer):
 
 
 class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
-    """
-    A Factory for creating :class:`AliasResolver` servers, which handles inputs
-    and outputs, and keeps an in-memory mapping of Postfix aliases in the form
-    of a dictionary.
+    """A Factory for creating :class:`AliasResolver` servers, which handles
+    inputs and outputs, and keeps an in-memory mapping of Postfix aliases in
+    the form of a dictionary.
 
-    xxx fill me in
+    >>> from leap.mx import alias_resolver
+    >>> aliasResolverFactory = alias_resolver.AliasResolver(
+    ...     data={'isis': 'isis@leap.se',
+    ...           'drebs': 'drebs@leap.se',
+    ...           'elijah': 'elijah@leap.se',})
+    >>> aliasResolver = aliasResolverFactory.buildProtocol()
+    >>> aliasResolver.check_recipient_access('isis')
     """
     protocol = AliasResolver
+    database = couchdb.ConnectedCouchDB
 
-    def __init__(self, addr='127.0.0.1', port=4242, timeout=120, data=None):
-        """
-        Create a Factory which returns :class:`AliasResolver` servers.
+    def __init__(self, addr='127.0.0.1', port=4242, timeout=120,
+                 data=None, virtual_transport=None, use_virtual_transport=False,
+                 couch_host=None, couch_port=None, couch_dbname='users',
+                 couch_username=None, couch_password=None):
+        """Create a Factory which returns :class:`AliasResolver` servers.
 
-        @param addr: A string giving the IP address of this server.
-            Default: '127.0.0.1'
-        @param port: An integer that specifies the port number to listen
-            on. Default: 4242
-        @param timeout: An integer specifying the number of seconds to wait
-            until we should time out. Default: 120
-        @param data: A dict to use to initialise or update the alias mapping.
+        :param str addr: A string giving the IP address of this server, for
+                         talking to postfix.  Default: '127.0.0.1'
+        :param int port: An integer that specifies the port number that this
+                         server should listen and respond on, for talking to
+                         Postfix.  on. Default: 4242
+        :param int timeout: An integer specifying the number of seconds to wait
+                            until we should time out. Default: 120
+        :param dict data: A dict to use to initialise or update the alias
+                          mapping.
+        :param str virtual_transport: The domain portion of an email address
+                                      to suffix the UUID responses of
+                                      ``AliasResolver.virtual_alias_map`` with.
+        :param bool use_virtual_transport: If True, suffix UUIDs with the
+                                           ``virtual_transport`` string.
+
+        :param str couch_host: The IP address of the CouchDB server to query.
+        :param int couch_port: The port of the CouchDB server to query.
+        :param str couch_dbname: The database in the CouchDB to bind to.
+        :param str couch_username: The username for authenticating to the
+                                   CouchDB.
+        :param str couch_password: The password for authentication.
         """
         super(postfix.PostfixTCPMapDeferringDictServerFactory,
               self).__init__(data=data)
