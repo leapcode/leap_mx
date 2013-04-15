@@ -120,12 +120,30 @@ class StatusCodes(object):
                     'FAIL': 554, }
 
     def __init__(self, status_code=None):
-        """xxx fill me in"""
+        """Construct an SMTP status code generator.
+
+        :type status_code: str or int
+        :param status_code: (optional) see :func:`StatusCode.get`.
+        """
         if status_code:
             self.get(status_code)
 
     def get(self, status_code=None)
-        """xxx fill me in"""
+        """Takes an SMTP-like status code and returns an SMTP-like message.
+
+        :type status_code: str or int
+        :param status_code: The string or integer for the response we want
+                            to give back to the MTA, after looking up an
+                            email address in the local user database.
+                            Can be one of:
+            * ``OK``    or ``200``
+            * ``RETRY`` or ``400``
+            * ``BAD``   or ``500``
+            * ``NOKEY`` or ``550``
+            * ``DEFER`` or ``552``
+            * ``DENY``  or ``553``
+            * ``FAIL``  or ``554``
+        """
         if status_code:
             if isinstance(status_code, str):
                 return status_code, getattr(self, status_code.upper(), None)
