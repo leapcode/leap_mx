@@ -50,9 +50,7 @@ class ConnectedCouchDB(client.CouchDB):
                                              username=username,
                                              password=password,
                                              *args, **kwargs)
-        if dbName:
-            self.bindToDB(dbName)
-        else:
+        if dbName is None:
             databases = self.listDB()
             log.msg("Available databases: %s" % databases)
 
