@@ -31,7 +31,7 @@ class ConnectedCouchDB(client.CouchDB):
     CouchDB document for testing is '_design', and the view is simply
     a preconfigured set of mapped responses.
     """
-    def __init__(self, host, port, dbName=None, username=None,
+    def __init__(self, host, port=5984, dbName=None, username=None,
                  password=None, *args, **kwargs):
         """
         Connect to a CouchDB instance.
@@ -44,7 +44,8 @@ class ConnectedCouchDB(client.CouchDB):
         @returns: A :class:`twisted.internet.defer.Deferred` representing the
                   the client connection to the CouchDB instance.
         """
-        super(client.CouchDB, self).__init__(host, port,
+        super(client.CouchDB, self).__init__(host,
+                                             port=port,
                                              dbName=dbName,
                                              username=username,
                                              password=password,
