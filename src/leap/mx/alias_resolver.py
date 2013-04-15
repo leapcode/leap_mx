@@ -161,12 +161,11 @@ class StatusCodes(object):
 
 
 class AliasResolver(postfix.PostfixTCPMapServer):
-    """
-    Resolve postfix aliases, similarly to using "$ postmap -q <alias>".
+    """Resolve postfix aliases, similarly to using "$ postmap -q <alias>".
 
     This class starts a simple LineReceiver server which listens for a string
-    specifying an alias to look up, :param:`key`, and which will be used to
-    query the local Postfix server. You can test it with:
+    specifying an alias ``key`` to look up, which will be used to query the
+    local user database. You can test it with:
 
         $ ./alias_resolver.py &
         $ /usr/bin/postmap -q <key> tcp:localhost:1347
@@ -176,7 +175,12 @@ class AliasResolver(postfix.PostfixTCPMapServer):
     https://www.iana.org/assignments/smtp-enhanced-status-codes/
     """
     def __init__(self, *args, **kwargs):
-        """Create a server which listens for Postfix aliases to resolve."""
+        """Create a server which listens for Postfix aliases to resolve.
+
+        :param int timeout: Number of seconds to wait for a response.
+        :param str delimiter: The delimiter to use for the EOL on responses.
+                              (Default: '\n')
+        """
         super(postfix.PostfixTCPMapServer, self).__init__(*args, **kwargs)
         self.status_codes = StatusCodes()
 
@@ -198,7 +202,11 @@ class AliasResolver(postfix.PostfixTCPMapServer):
 
     @defer.inlineCallbacks
     def do_put(self, keyAndValue):
-        """Add a key and value to the database, provided it does not exist."""
+        """Add a key and value to the database, provided it does not exist.
+
+        :param str keyAndValue: An alias and email address, separated by a
+                                space, i.e. ``"isis isis@leap.se"``.
+        """
         if keyAndValue is None:
             self.sendCode(500)
             log.warn("Command 'put' takes two parameters.")
@@ -219,20 +227,26 @@ class AliasResolver(postfix.PostfixTCPMapServer):
 
     @defer.inlineCallbacks
     def do_delete(self, key):
-        """
-        Delete an alias from the mapping database.
+        """Delete an alias from the CouchDB.
 
-        xxx not sure if this is a good idea...
+        xxx I'm not sure if implementing this would be a good idea...
+
+        :param str key: An email address to delete from the CouchDB.
         """
         raise NotImplemented
 
     def check_recipient_access(self, key):
-        """Make a query to resolve an alias."""
-        self.do_get(self, key)
+        """Make a query to the CouchDB to resolve an alias.
+
+        If the ``key`` is an email address which the CouchDB has information
+        for that account, we should respond to Postfix with an '200%20\n".
+
+        :param str key: An email address to look up in the CouchDB.
+        """
+        self.do_get(key)
 
     def virtual_alias_map(self, key):
-        """
-        Get the Universal Unique ID for the alias address. If
+        """Get the Universal Unique ID for the alias address. If
         virtual_transport is True, then suffix the UUID with a domain.
 
         xxx I don't think we actually need couchdb for this, the UUID is an
@@ -241,6 +255,11 @@ class AliasResolver(postfix.PostfixTCPMapServer):
         querying a database, I would presume), it seems silly to do this.
 
         Instead, we should query CouchDB with the UUID to get the GPG keyid.
+
+        xxx Or are we supposed to query Soledad for this?
+
+        :param str key: An email address to look up in the CouchDB.
+        :returns: The UUID of the user.
         """
         ## xxx need email address parser
         client_id = createUUID(key)
