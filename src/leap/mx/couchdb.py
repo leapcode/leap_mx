@@ -89,8 +89,10 @@ class ConnectedCouchDB(client.CouchDB):
         return d
 
     def query(self, uri):
-        """
-        Query a CouchDB instance that we are connected to.
+        """Query a CouchDB instance that we are connected to.
+
+        :param str uri: A particular URI in the CouchDB, i.e.
+                        "/users/_design/User/_view/by_email_or_alias".
         """
         try:
             self.checkURI(uri) ## xxx write checkURI()
