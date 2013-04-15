@@ -146,11 +146,15 @@ class StatusCodes(object):
         """
         if status_code:
             if isinstance(status_code, str):
-                return status_code, getattr(self, status_code.upper(), None)
+                if status_code.upper() in self.SMTPStrings.keys():
+                    return self.SMTPStrings[status_code], getattr(
+                        self, status_code.upper(), '')
+                else:
+                    return 500, self.FAIL
             elif isinstance(status_code, int):
-                for k, v in self.fake_smtp_codes.items():
-                    ## we want to return None if it's 550
-                    if k == str(status_code) and k != '550':
+                for k, v in self.SMTPCodes.items():
+                    ## we want to return None if it's 500
+                    if k == str(status_code) and k != '500':
                         return status_code, v
                 log.debug("%s" % self.NOKEY)
                 return None, ''
