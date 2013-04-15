@@ -27,6 +27,7 @@ except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
 
+from leap.mx import couchdb
 from leap.mx.util import net, log, config, exceptions
 
 
