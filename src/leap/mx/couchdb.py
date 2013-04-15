@@ -54,6 +54,14 @@ class ConnectedCouchDB(client.CouchDB):
             databases = self.listDB()
             log.msg("Available databases: %s" % databases)
 
+    def createDB(self, dbName):
+        """Overrides ``paisley.client.CouchDB.createDB``."""
+        pass
+
+    def deleteDB(self, dbName):
+        """Overrides ``paisley.client.CouchDB.deleteDB``."""
+        pass
+
     def queryByEmailOrAlias(self, alias, dbDoc="User",
                             view="by_email_or_alias"):
         """
