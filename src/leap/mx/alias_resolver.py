@@ -50,15 +50,51 @@ class DatabaseNotConnected(Exception):
     """Raised when not currently connected to a database."""
 
 class StatusCodes(object):
-    """
-    The Postfix manual states:
+    """The Postfix manual states:
 
-        The request completion status is one of OK, RETRY, NOKEY (lookup
-        failed because the key was not found), BAD (malformed request) or DENY
-        (the table is not approved for proxy read or update access).
+        The request completion status is one of OK, RETRY, NOKEY (lookup failed
+        because the key was not found), BAD (malformed request) or DENY (the
+        table is not approved for proxy read or update access).
+
+    In brief, Postfix will send ``get SPACE key NEWLINE``, or
+    ``put SPACE key NEWLINE`` where ``key`` is an alias or email address.
+    It expects non-printable ascii characters to be url-encoded, i.e. a
+    get-request would look like:
+
+    ``get%20isis@leap.se%0A``
+
+    and in response, Postfix expects an SMTP-like status code and a string
+    describing the nature of or reason for the response, no longer than
+    4096 "characters" (which, due to UTF-8 ubiquity, we'll err on the safe
+    side and assume that means 4096 bytes.)
+
+    From the Postfix manual on its TCP map protocol
+    (http://www.postfix.org/tcp_table.5.html):
+
+       500 SPACE text NEWLINE
+              In  case  of  a  lookup request, the requested data
+              does not exist.  In case of an update request,  the
+              request  was  rejected.   The  text  describes  the
+              nature of the problem.
+
+       400 SPACE text NEWLINE
+              This  indicates  an  error  condition.   The   text
+              describes  the  nature  of  the problem. The client
+              should retry the request later.
+
+       200 SPACE text NEWLINE
+              The request was successful. In the case of a lookup
+              request,  the  text  contains an encoded version of
+              the requested data.
 
     Other SMTP codes: http://www.greenend.org.uk/rjk/tech/smtpreplies.html
+
+    >>> statcodes = StatusCodes()
+    >>> if <query local user database for email address>:
+    >>>     response_message = statcodes(200)
+    >>>     aliasresolver.tellMTA()
     """
+
     OK    = "OK Others might say 'HELLA AWESOME'...but we're not convinced."
     RETRY = "RETRY Server is busy plotting revolution; requests might take a while."
     BAD   = "BAD bad Leroy Brown, baddest man in the whole...er. Malformed request."
