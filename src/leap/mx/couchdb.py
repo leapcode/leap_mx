@@ -36,12 +36,12 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Connect to a CouchDB instance.
 
-        @param host: A hostname string for the CouchDB server.
-        @param port: The port of the CouchDB server, as an integer.
-        @param dbName: (optional) The default database to connect to.
-        @param username: (optional) The username for authorization.
-        @param password: (optional) The password for authorization.
-        @returns: A :class:`twisted.internet.defer.Deferred` representing the
+        :param str host: A hostname string for the CouchDB server.
+        :param int port: The port of the CouchDB server.
+        :param str dbName: (optional) The default database to bind queries to.
+        :param str username: (optional) The username for authorization.
+        :param str password: (optional) The password for authorization.
+        :returns: A :class:`twisted.internet.defer.Deferred` representing the
                   the client connection to the CouchDB instance.
         """
         super(client.CouchDB, self).__init__(host,
