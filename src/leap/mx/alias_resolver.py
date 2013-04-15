@@ -366,9 +366,7 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
                 % (addr, port))
 
     def buildProtocol(self):
-        """
-        Create an instance of the :class:`AliasResolver` server.
-        """
+        """Create an instance of the :class:`AliasResolver` server."""
         proto = self.protocol()
         proto.timeout = self.timeout
         proto.virtual_transport = self.virtual_transport
