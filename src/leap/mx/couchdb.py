@@ -64,12 +64,11 @@ class ConnectedCouchDB(client.CouchDB):
 
     def queryByEmailOrAlias(self, alias, dbDoc="User",
                             view="by_email_or_alias"):
-        """
-        Check to see if a particular email or alias exists.
+        """Check to see if a particular email or alias exists.
 
-        @param alias: A string representing the email or alias to check.
-        @param dbDoc: The CouchDB document to open.
-        @param view: The view of the CouchDB document to use.
+        :param str alias: A string representing the email or alias to check.
+        :param str dbDoc: The CouchDB document to open.
+        :param str view: The view of the CouchDB document to use.
         """
         assert isinstance(alias, str), "Email or alias queries must be string"
 
