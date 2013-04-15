@@ -189,9 +189,21 @@ class AliasResolver(postfix.PostfixTCPMapServer):
         self.status_codes = StatusCodes()
 
     def sendCode(self, code, message=None):
-        """Send an SMTP-like code with a message."""
-        if not message:
-            message = self.status_codes.get(code)
+        """Send an SMTP-like code with a message.
+
+        :type code: str or int
+        :param code: The status code to send, see
+                     ``alias_resolver.StatusCodes``.
+        """
+        try:
+            assert isinstance(code, int), "status code must be type int"
+        except AssertionError as ae:
+            log.err(ae.message)
+            self.sendLine('500 internal server error: %s' % ae.message)
+
+        msg = self.status_codes.get(code)
+        if message is not None and isinstance(message, str):
+            msg += (" " + message)
         self.sendLine('%3.3d %s' % (code, message or ''))
 
     def do_get(self, key):
