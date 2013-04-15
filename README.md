@@ -1,22 +1,22 @@
 leap_mx
 =======
 **Note:** Currently in development. Feel free to test, and please [report
- bugs](mailto:isis@leap.se).
+ bugs on our tracker](https://we.riseup.net/leap/mx) or [by email](mailto:isis@leap.se).
 
 An asynchronous, transparently-encrypting remailer for the LEAP platform,
 using BigCouch/CouchDB and PGP/GnuPG, written in Twisted Python.
 
 ## [install](#install) ##
-=========================
-[tl;dr](#tl;dr)
 
 ### [virtualenv](#virtualenv) ###
 =================================
+Impatient? Don't like virtualenvs? [tl;dr](#tl;dr)
+
 Virtualenv is somewhat equivalent to fakeroot for python packages, and -- due
 to being packaged with copies of pip and python -- can be used to bootstrap
 its own install process, allowing pip and python to be used with sudo.
 
-#### [installing without sudo] ####
+#### installing without sudo ####
 
 To install without using sudo, a bootstrap script to handle the setup process
 is provided. It does the following:
@@ -38,7 +38,7 @@ $ ./bootstrap
 $ workon leap_mx
 ~~~
 
-#### [installing in a regular virtualenv] ###
+#### installing in a regular virtualenv ###
 To install python, virtualenv, and get started, do:
 
 ~~~
@@ -62,8 +62,20 @@ Although, **it is advised** to install inside a python virtualenv.
 ## [running](#running) ##
 =========================
 
-To get running, clone this repo, and (assuming you've already set up your virtualenv and obtained all the requirements) do:
+To get running, clone this repo, and (assuming you've already set up your
+virtualenv and obtained all the requirements) do:
 
 ~~~
 $ ./start_mx.py --help
 ~~~
+
+## [hacking](#hacking) ##
+=========================
+Please see the HACKING and DESIGN docs.
+
+Our bugtracker is [here](https://leap.se/code/projects/eip_server/issue/new). 
+
+Please use that for bug reports and feature requests instead of github's
+tracker. We're using github for code commenting and review between
+collaborators.
+
