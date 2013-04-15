@@ -338,6 +338,16 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         self.use_virtual_transport = use_virtual_transport
         self.noisy = True if config.advanced.noisy else False
 
+        if couch_port is None:
+            couch_port = 5984
+        if couch_dbname is None:
+            couch_dbname = 'users'
+        self.database_connected = False
+        if couch_host is not None:
+            self.couch = self.connectDatabase(couch_host, couch_port,
+                                              couch_dbname, couch_username,
+                                              couch_password)
+
         try:
             assert isinstance(port, int), "Port number must be an integer"
             assert isinstance(timeout, int), "Timeout must be an integer"
@@ -366,17 +376,36 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         proto.factory = self
         return proto
 
-    def get(self, *args, **kwargs):
-        """
-        xxx connect me to the couchdb
-        """
-        pass
+    def _cb_connectDatabase(self):
+        self.database_connected = True
 
-    def put(self, *args, **kwargs):
+    def connectDatabase(self, couch_host, couch_port=None, couch_dbname=None,
+                        couch_username=None, couch_password=None):
+        """Connect to the CouchDB instance."""
+        if not self.database_connected:
+            d = self.database(couch_host, couch_port, dbName=couch_dbname,
+                              username=couch_username, password=couch_password)
+            d.addCallback(self._cb_connectDatabase)
+            d.addErrback(log.err)
+            return d
+        else:
+            return self.couch ## xxx are we sure we only want one connection?
+
+    def get(self, key, **kwargs):
+        """Query the CouchDB for a user's info.
+
+        :param str key: The alias to look up. Should be either an email address
+                         or a username. (xxx do we want to also support lookups
+                         by UUID?)
         """
-        xxx connect me to the couchdb
-        """
-        pass
+        if self.database_connected:
+            return self.couch.queryByEmailOrAlias(key)
+        else:
+            raise DatabaseNotConnected("Must be connected to a database.")
+
+    def put(self, key, **kwargs):
+        """Add an alias to the CouchDB database."""
+        raise NotImplemented
 
 
 if __name__ == "__main__":
