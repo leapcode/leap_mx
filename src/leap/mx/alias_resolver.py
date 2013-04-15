@@ -5,22 +5,15 @@ alias_resolver.py
 =================
 Classes for resolving postfix aliases.
 
-@authors: Isis Agora Lovecruft
-@version: 0.0.1-beta
-@license: see included LICENSE file
-@copyright: copyright 2013 Isis Agora Lovecruft
+:authors: Isis Agora Lovecruft
+:version: 0.0.1-beta
+:license: see included LICENSE file
+:copyright: (c) 2013 Isis Agora Lovecruft
 
 TODO:
 
     o Look into using twisted.protocols.postfix.policies classes for
       controlling concurrent connections and throttling resource consumption.
-
-    o alias.ProcessAlias()
-
-## have uuid -> get gpg keyid
-
-alias.ProcessAlias('/path/to/mail_reciever', *args)
-
 '''
 
 import os
