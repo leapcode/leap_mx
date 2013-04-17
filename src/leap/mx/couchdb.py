@@ -26,44 +26,49 @@ from leap.mx.util import log
 
 
 class ConnectedCouchDB(client.CouchDB):
-    """
-    Connect to a CouchDB instance.
+    """Connect to a CouchDB instance.
 
-    ## xxx will we need to open CouchDB documents and views?
-    ## yes, these are in a _design document
+    CouchDB document for testing is '_design', and the view is simply
+    a preconfigured set of mapped responses.
     """
-    def __init__(self, host, port, dbName=None, username=None,
+    def __init__(self, host, port=5984, dbName=None, username=None,
                  password=None, *args, **kwargs):
         """
         Connect to a CouchDB instance.
 
-        @param host: A hostname string for the CouchDB server.
-        @param port: The port of the CouchDB server, as an integer.
-        @param dbName: (optional) The default database to connect to.
-        @param username: (optional) The username for authorization.
-        @param password: (optional) The password for authorization.
-        @returns: A :class:`twisted.internet.defer.Deferred` representing the
+        :param str host: A hostname string for the CouchDB server.
+        :param int port: The port of the CouchDB server.
+        :param str dbName: (optional) The default database to bind queries to.
+        :param str username: (optional) The username for authorization.
+        :param str password: (optional) The password for authorization.
+        :returns: A :class:`twisted.internet.defer.Deferred` representing the
                   the client connection to the CouchDB instance.
         """
-        super(client.CouchDB, self).__init__(host, port,
+        super(client.CouchDB, self).__init__(host,
+                                             port=port,
                                              dbName=dbName,
                                              username=username,
                                              password=password,
                                              *args, **kwargs)
-        if dbName:
-            self.bindToDB(dbName)
-        else:
+        if dbName is None:
             databases = self.listDB()
             log.msg("Available databases: %s" % databases)
 
+    def createDB(self, dbName):
+        """Overrides ``paisley.client.CouchDB.createDB``."""
+        pass
+
+    def deleteDB(self, dbName):
+        """Overrides ``paisley.client.CouchDB.deleteDB``."""
+        pass
+
     def queryByEmailOrAlias(self, alias, dbDoc="User",
                             view="by_email_or_alias"):
-        """
-        Check to see if a particular email or alias exists.
+        """Check to see if a particular email or alias exists.
 
-        @param alias: A string representing the email or alias to check.
-        @param dbDoc: The CouchDB document to open.
-        @param view: The view of the CouchDB document to use.
+        :param str alias: A string representing the email or alias to check.
+        :param str dbDoc: The CouchDB document to open.
+        :param str view: The view of the CouchDB document to use.
         """
         assert isinstance(alias, str), "Email or alias queries must be string"
 
@@ -84,8 +89,10 @@ class ConnectedCouchDB(client.CouchDB):
         return d
 
     def query(self, uri):
-        """
-        Query a CouchDB instance that we are connected to.
+        """Query a CouchDB instance that we are connected to.
+
+        :param str uri: A particular URI in the CouchDB, i.e.
+                        "/users/_design/User/_view/by_email_or_alias".
         """
         try:
             self.checkURI(uri) ## xxx write checkURI()
@@ -102,12 +109,14 @@ class ConnectedCouchDB(client.CouchDB):
 
     @defer.inlineCallbacks
     def listUsersAndEmails(self, limit=1000, reverse=False):
-        """
-        List all users and email addresses, up to the given limit.
+        """List all users and email addresses, up to the given limit.
+
+        :param int limit: The number of results to limit the response to.
+        :param bool reverse: Start at the end of the database mapping.
         """
         query = "/users/_design/User/_view/by_email_or_alias/?reduce=false"
         answer = yield self.query(query, limit=limit, reverse=reverse)
-        
+
         if answer:
             parsed = yield self.parseResult(answer)
             if parsed:
