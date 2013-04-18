@@ -53,8 +53,7 @@ class EventHandler(pyinotify.ProcessEvent):
                 uuid = _get_uuid(owner, self._user, self._password, self._server)
                 # get the pubkey for uuid
                 pubkey = _get_pubkey(uuid, self._user, self._password, self._server)
-                # if the message isn't encrypted already:
-                #     encrypt the message to the pubkey
+                # encrypt the message to the pubkey
                 encrypted = _encrypt_message(pubkey, mail_data)
                 # save the message in a couchdb
                 if _export_message(uuid, encrypted, self._user, self._password, self._server):
