@@ -4,3 +4,4 @@ PyYAML>=3.10
 pyxdg>=0.19-5
 ## xxx change me to whatever you name the package in pypi
 #python-gnupg>=0.3.0
+ipaddr
