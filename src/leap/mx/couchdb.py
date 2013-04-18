@@ -1,13 +1,25 @@
 # -*- encoding: utf-8 -*-
+# couchdb.py
+# Copyright (C) 2013 LEAP
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 '''
 couchdb.py
 ==========
 Classes for working with CouchDB or BigCouch instances which store email alias
 maps, user UUIDs, and GPG keyIDs.
-
-@authors: Isis Agora Lovecruft
-@version: 0.0.1-beta
-@license: see included LICENSE file
 '''
 
 try:
@@ -22,106 +34,123 @@ except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
 
+from functools import partial
+
 from leap.mx.util import log
 
 
 class ConnectedCouchDB(client.CouchDB):
-    """Connect to a CouchDB instance.
+    """
+    Connect to a CouchDB instance.
 
     CouchDB document for testing is '_design', and the view is simply
     a preconfigured set of mapped responses.
     """
+
     def __init__(self, host, port=5984, dbName=None, username=None,
                  password=None, *args, **kwargs):
         """
         Connect to a CouchDB instance.
 
-        :param str host: A hostname string for the CouchDB server.
-        :param int port: The port of the CouchDB server.
-        :param str dbName: (optional) The default database to bind queries to.
-        :param str username: (optional) The username for authorization.
-        :param str password: (optional) The password for authorization.
-        :returns: A :class:`twisted.internet.defer.Deferred` representing the
-                  the client connection to the CouchDB instance.
+        @param host: A hostname string for the CouchDB server.
+        @type host: str
+        @param port: The port of the CouchDB server.
+        @type port: int
+        @param dbName: (optional) The default database to bind queries to.
+        @type dbName: str
+        @param username: (optional) The username for authorization.
+        @type username: str
+        @param str password: (optional) The password for authorization.
+        @type password: str
         """
-        super(client.CouchDB, self).__init__(host,
-                                             port=port,
-                                             dbName=dbName,
-                                             username=username,
-                                             password=password,
-                                             *args, **kwargs)
+        client.CouchDB.__init__(self,
+                                host,
+                                port=port,
+                                dbName=dbName,
+                                username=username,
+                                password=password,
+                                *args, **kwargs)
         if dbName is None:
             databases = self.listDB()
-            log.msg("Available databases: %s" % databases)
+            databases.addCallback(self._print_databases)
+
+    def _print_databases(self, data):
+        """
+        Callback for listDB that prints the available databases
+
+        @param data: response from the listDB command
+        @type data: array
+        """
+        log.msg("Available databases:")
+        for database in data:
+            log.msg("  * %s" % (database,))
 
     def createDB(self, dbName):
-        """Overrides ``paisley.client.CouchDB.createDB``."""
+        """
+        Overrides ``paisley.client.CouchDB.createDB``.
+        """
         pass
 
     def deleteDB(self, dbName):
-        """Overrides ``paisley.client.CouchDB.deleteDB``."""
+        """
+        Overrides ``paisley.client.CouchDB.deleteDB``.
+        """
         pass
 
-    def queryByEmailOrAlias(self, alias, dbDoc="User",
-                            view="by_email_or_alias"):
-        """Check to see if a particular email or alias exists.
+    def queryByLoginOrAlias(self, alias):
+        """
+        Check to see if a particular email or alias exists.
 
-        :param str alias: A string representing the email or alias to check.
-        :param str dbDoc: The CouchDB document to open.
-        :param str view: The view of the CouchDB document to use.
+        @param alias: A string representing the email or alias to check.
+        @type alias: str
+        @return: a deferred for this query
+        @rtype twisted.defer.Deferred
         """
         assert isinstance(alias, str), "Email or alias queries must be string"
 
-        ## Prepend a forward slash, in case we forgot it:
-        if not alias.startswith('/'):
-            alias = '/' + alias
+        d = self.openView(docId="User",
+                          viewId="by_login_or_alias/",
+                          key=alias,
+                          reduce=False)
 
-        d = self.openDoc(dbDoc)
-        d.addCallbacks(self.openView, log.err, (view))
-        d.addCallbacks(self.get, log.err, (alias))
-        d.addCallbacks(self.parseResult, log.err)
-
-        @d.addCallback
-        def show_answer(result):
-            log.msg("Query: %s" % alias)
-            log.msg("Answer: %s" % alias)
+        d.addCallbacks(partial(self._get_uuid, alias), log.err)
 
         return d
 
-    def query(self, uri):
-        """Query a CouchDB instance that we are connected to.
-
-        :param str uri: A particular URI in the CouchDB, i.e.
-                        "/users/_design/User/_view/by_email_or_alias".
+    def _get_uuid(self, alias, result):
         """
-        try:
-            self.checkURI(uri) ## xxx write checkURI()
-            ## xxx we might be able to use self._parseURI()
-        except SchemeNotSupported, sns: ## xxx where in paisley is this?
-            log.exception(sns) ## xxx need log.exception()
+        Parses the result of the by_login_or_alias query and gets the
+        uuid
 
-        d = self.get(uri)
-        @d.addCallback
-        def parse_answer(answer):
-            return answer
-
-        return answer
-
-    @defer.inlineCallbacks
-    def listUsersAndEmails(self, limit=1000, reverse=False):
-        """List all users and email addresses, up to the given limit.
-
-        :param int limit: The number of results to limit the response to.
-        :param bool reverse: Start at the end of the database mapping.
+        @param alias: alias looked up
+        @type alias: string
+        @param result: result dictionary
+        @type result: dict
+        @return: The uuid for alias if available
+        @rtype: str
         """
-        query = "/users/_design/User/_view/by_email_or_alias/?reduce=false"
-        answer = yield self.query(query, limit=limit, reverse=reverse)
+        for row in result["rows"]:
+            if row["key"] == alias:
+                return row["id"]
 
-        if answer:
-            parsed = yield self.parseResult(answer)
-            if parsed:
-                log.msg("%s" % parsed)
-            else:
-                log.msg("No answer from database, perhaps there are no users.")
-        else:
-            log.msg("Problem querying CouchDB instance...")
+
+if __name__ == "__main__":
+    from twisted.internet import reactor
+    cdb = ConnectedCouchDB("localhost",
+                           port=6666,
+                           dbName="users",
+                           username="",
+                           password="")
+
+    d = cdb.queryByLoginOrAlias("test1")
+    @d.addCallback
+    def right(result):
+        print "Should be an actual uuid:", result
+
+    d2 = cdb.queryByLoginOrAlias("asdjaoisdjoiqwjeoi")
+    @d2.addCallback
+    def wrong(result):
+        print "Should be None:", result
+
+    reactor.callLater(5, reactor.stop)
+    reactor.run()
