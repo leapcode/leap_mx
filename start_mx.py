@@ -1,146 +1,107 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
-"""
-                ____
-               | MX |_________________________
-            ___|____| An encrypting remailer  |________
-           |       |__________________________|        |
-           | is designed for use on a mail exchange    |
-           | with OpenPGP implementations and Postfix, |
-           | and is part of the Leap Encryption Access |
-           | Project platform.                         |
-           |___________________________________________|
-"""
-    # authors:   Isis Agora Lovecruft, <isis@leap.se> 0x2cdb8b35
-    # license:   AGPLv3, see included LICENCE file.
-    # copyright: copyright (c) 2013 Isis Agora Lovecruft
+# -*- encoding: utf-8 -*-
+# start_mx.py
+# Copyright (C) 2013 LEAP
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from __future__ import print_function
-from os         import getcwd
-from os         import path as ospath
-
+import argparse
 import sys
+import ConfigParser
+import logging
 
-
-application_name = "leap_mx"
-
-def __get_dirs__():
-    """Get the absolute path of the top-level repository directory."""
-    here = getcwd()
-    base = here.rsplit(application_name, 1)[0]
-    repo = ospath.join(base, application_name)
-    leap = ospath.join(repo, 'src')
-    ours = ospath.join(leap, application_name.replace('_', '/'))
-    return repo, leap, ours
-
-## py3k check, snagged from python-gnupg-0.3.2 by Vinay Sajip
 try:
-    unicode
-    _py3k = False
-except NameError:
-    _py3k = True
-
-## Set the $PYTHONPATH:
-repo, leap, ours = __get_dirs__()
-sys.path[:] = map(ospath.abspath, sys.path)
-sys.path.insert(0, leap)
-
-## Now we should be able to import ourselves without installation:
-try:
-    from leap.mx      import runner
-    from leap.mx.util import config, log, version
+    from leap.mx import couchdb
+    from leap.mx.alias_resolver import AliasResolverFactory
 except ImportError, ie:
-    print("%s \nExiting... \n" % ie.message)
+    print "%s \nExiting... \n" % ie.message
     sys.exit(1)
 
 try:
-    from twisted.python      import usage, runtime, failure
-    from twisted.python.util import spewer
+    from twisted.internet import reactor
+    from twisted.internet.endpoints import TCP4ServerEndpoint
 except ImportError, ie:
-    print("This software requires Twisted>=12.0.2, please see the README for")
-    print("help on using virtualenv and pip to obtain requirements.")
+    print "This software requires Twisted>=12.0.2, please see the README for"
+    print "help on using virtualenv and pip to obtain requirements."
 
-
-class MXOptions(usage.Options):
-    """Command line options for leap_mx."""
-
-    optParameters = [
-        ['config', 'c', 'mx.conf', 'Config file to use']]
-    optFlags = [
-        ['all-tests', 'a', 'Run all unittests'],
-        ['verbose', 'v', 'Increase logging verbosity']]
-
-    def opt_version(self):
-        """Print leap_mx version and exit."""
-        print("Authors:   %s" % version.getAuthors())
-        print("Licence:   AGPLv3, see included LICENSE file")
-        print("Copyright: © 2013 Isis Lovecruft, see included COPYLEFT file")
-        print("Version:   %s" % version.getVersion())
-        sys.exit(0)
-
-    def opt_spewer(self):
-        """Print *all of the things*. Useful for debugging."""
-        sys.settrace(spewer)
-
-    def parseArgs(self):
-        """Called with the remaining unrecognised commandline options."""
-        log.warn("Couldn't recognise option: %s" % self)
+logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    dependency_check = runner.CheckRequirements(version.getPackageName(),
-                                                version.getPipfile())
-    ## the following trickery is for printing the module docstring
-    ## *before* the options help, and printing it only once:
-    import __main__
-    print("%s" % __main__.__doc__)
-    __main__.__doc__ = ("""
-Example Usage:
-  $ start_mx.py --config="./my-mx.conf" --spewer
-""")
+    epilog = "Copyright 2012 The LEAP Encryption Access Project"
+    parser = argparse.ArgumentParser(description="""LEAP MX""",
+                                     epilog=epilog)
+    parser.add_argument('-d', '--debug', action="store_true",
+                        help="Launches the LEAP MX mail receiver with debug output")
+    parser.add_argument('-l', '--logfile', metavar="LOG FILE", nargs='?',
+                        action="store", dest="log_file",
+                        help="Writes the logs to the specified file")
+    parser.add_argument('-c', '--config', metavar="CONFIG FILE", nargs='?',
+                        action="store", dest="config",
+                        help="Where to look for the configuration file. " \
+                            "Default: mail_receiver.cfg")
 
-    mx_options = MXOptions()
-    if len(sys.argv) <= 1:
-        mx_options.opt_help()
-        sys.exit(0)
-    try:
-        mx_options.parseOptions()
-    except usage.UsageError, ue:
-        print("%s" % ue.message)
-        sys.exit(1)
-    options = mx_options.opts
+    opts, _ = parser.parse_known_args()
 
-    ## Get the config settings:
-    config.filename = options['config']
-    config.loadConfig()
+    debug = opts.debug
+    config_file = opts.config
 
-    if config.basic.enable_logfile:
-        ## Log to file:
-        logfilename = config.basic.logfile
-        logfilepath = ospath.join(repo, 'logs')
-        log.start(logfilename, logfilepath)
+    if debug:
+        level = logging.DEBUG
     else:
-        ## Otherwise just log to stdout:
-        log.start()
+        level = logging.WARNING
 
-    log.msg("Testing logging functionality")
-    if runtime.platform.supportsThreads():
-        thread_support = "with thread support."
-    else:
-        thread_support = "without thread support."
-    log.debug("Running %s, with Python %s on %s platform %s"
-              % (application_name, runtime.shortPythonVersion(),
-                 runtime.platform.getType(), thread_support))
+    if config_file is None:
+        config_file = "mx.conf"
 
-    if options['verbose']:
-        config.basic.debug = True
-        failure.traceupLength = 7
-        failure.startDebugMode()
+    logger.setLevel(level)
+    console = logging.StreamHandler()
+    console.setLevel(level)
+    formatter = logging.Formatter(
+        '%(asctime)s '
+        '- %(name)s - %(levelname)s - %(message)s')
+    console.setFormatter(formatter)
+    logger.addHandler(console)
 
-    if options['all-tests']:
-        from leap.mx import tests
-        tests.run()
-    else:
-        mx_options.getUsage()
-        sys.exit(1)
+    logger.info("~~~~~~~~~~~~~~~~~~~")
+    logger.info("    LEAP MX")
+    logger.info("~~~~~~~~~~~~~~~~~~~")
+
+    logger.info("Reading configuration from %s" % (config_file,))
+
+    config = ConfigParser.ConfigParser()
+    config.read(config_file)
+
+    users_user = config.get("couchdb", "users_user")
+    users_password = config.get("couchdb", "users_password")
+
+    mail_user = config.get("couchdb", "mail_user")
+    mail_password = config.get("couchdb", "mail_password")
+
+    server = config.get("couchdb", "server")
+    port = config.get("couchdb", "port")
+
+    cdb = couchdb.ConnectedCouchDB(server,
+                                   port=port,
+                                   dbName="users",
+                                   username=users_user,
+                                   password=users_password)
+
+    # TODO: use the couchdb for mail
+
+    # TODO: make the listening ports configurable
+    alias_endpoint = TCP4ServerEndpoint(reactor, 4242)
+    alias_endpoint.listen(AliasResolverFactory(couchdb=cdb))
+
+    reactor.run()

@@ -15,12 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
-couchdb.py
-==========
+"""
 Classes for working with CouchDB or BigCouch instances which store email alias
 maps, user UUIDs, and GPG keyIDs.
-'''
+"""
 
 try:
     from paisley import client
@@ -70,6 +68,9 @@ class ConnectedCouchDB(client.CouchDB):
                                 username=username,
                                 password=password,
                                 *args, **kwargs)
+
+        self._cache = {}
+
         if dbName is None:
             databases = self.listDB()
             databases.addCallback(self._print_databases)
@@ -108,6 +109,8 @@ class ConnectedCouchDB(client.CouchDB):
         """
         assert isinstance(alias, str), "Email or alias queries must be string"
 
+        # TODO: Cache results
+
         d = self.openView(docId="User",
                           viewId="by_login_or_alias/",
                           key=alias,
@@ -131,7 +134,19 @@ class ConnectedCouchDB(client.CouchDB):
         """
         for row in result["rows"]:
             if row["key"] == alias:
-                return row["id"]
+                uuid = row["id"]
+                self._cache[uuid] = row["value"]
+                return uuid
+        return None
+
+
+    def getPubKey(self, uuid):
+        pubkey = None
+        try:
+            pubkey = self._cache[uuid]
+        except:
+            pass
+        return pubkey
 
 
 if __name__ == "__main__":
@@ -146,6 +161,7 @@ if __name__ == "__main__":
     @d.addCallback
     def right(result):
         print "Should be an actual uuid:", result
+        print cdb.getPubKey(result)
 
     d2 = cdb.queryByLoginOrAlias("asdjaoisdjoiqwjeoi")
     @d2.addCallback
