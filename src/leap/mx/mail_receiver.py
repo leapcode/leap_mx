@@ -1,68 +1,97 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+# mail_receiver.py
+# Copyright (C) 2013 LEAP
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
-import pyinotify
 import logging
 import argparse
 import ConfigParser
 
 from email import message_from_string
+from functools import partial
 
-logger = logging.getLogger(name='leap_mx')
+from twisted.internet import inotify, reactor
+from twisted.python import filepath
+
+from leap.mx import couchdbhelper
+from leap.soledad.backends.couch import CouchDatabase
+
+logger = logging.getLogger(__name__)
 
 
-def _get_uuid(uid, user, password, server):
-    # TODO: implement!
-    return ""
-
-
-def _get_pubkey(uuid, user, password, server):
+def _get_pubkey(uuid):
     # TODO: implent!
-    return ""
+    logger.debug("Fetching pubkey for %s" % (uuid,))
+    return uuid, ""
 
-def _encrypt_message(pubkey, message):
+def _encrypt_message(uuid_pubkey, message):
     # TODO: implement!
-    return message
+    uuid, pubkey = uuid_pubkey
+    logger.debug("Encrypting message to %s's pubkey" % (uuid,))
+    logger.debug("Pubkey: %s" % (pubkey,))
+
+    if pubkey is None or len(pubkey) == 0:
+        # TODO: This is only for testing!! REMOVE!
+        return uuid, message
+
+    encrypted = ""
+
+    return uuid, encrypted
 
 
-def _export_message(uuid, message, user, password, server):
-    # TODO: Implement!
+def _export_message(uuid_message, couch_url):
+    uuid, message = uuid_message
+    logger.debug("Exporting message for %s" % (uuid,))
+
+    if uuid is None:
+        uuid = 0
+
+    db_url = couch_url + '/user-%s' % uuid
+    db = CouchDatabase.open_database(db_url, create=True)
+    doc = db.create_doc({'content': str(message)})
+
     return True
 
-# <Event dir=False mask=0x100 maskname=IN_CREATE name=1366132684.P9922.delloise path=Maildir/tmp pathname=Maildir/tmp/1366132684.P9922.delloise wd=2 >
-# <Event dir=False mask=0x20 maskname=IN_OPEN name=1366132684.P9922.delloise path=Maildir/tmp pathname=Maildir/tmp/1366132684.P9922.delloise wd=2 >
-# <Event dir=False mask=0x2 maskname=IN_MODIFY name=1366132684.P9922.delloise path=Maildir/tmp pathname=Maildir/tmp/1366132684.P9922.delloise wd=2 >
-# <Event dir=False mask=0x8 maskname=IN_CLOSE_WRITE name=1366132684.P9922.delloise path=Maildir/tmp pathname=Maildir/tmp/1366132684.P9922.delloise wd=2 >
-# <Event dir=False mask=0x100 maskname=IN_CREATE name=1366132684.V14I40088dM542424.delloise path=Maildir/new pathname=Maildir/new/1366132684.V14I40088dM542424.delloise wd=4 >
-# <Event dir=False mask=0x200 maskname=IN_DELETE name=1366132684.P9922.delloise path=Maildir/tmp pathname=Maildir/tmp/1366132684.P9922.delloise wd=2 >
 
-class EventHandler(pyinotify.ProcessEvent):
-    def __init__(self, user, password, server, *args, **kwargs):
-        pyinotify.ProcessEvent.__init__(self, *args, **kwargs)
-        self._user = user
-        self._password = password
-        self._server = server
+def _conditional_remove(do_remove, filepath):
+    if do_remove:
+        # remove the original mail
+        try:
+            logger.debug("Removing %s" % (filepath.path,))
+            filepath.remove()
+        except Exception as e:
+            # TODO: better handle exceptions
+            logger.exception("%s" % (e,))
 
-    def process_IN_CREATE(self, event):
-        if os.path.split(event.path)[-1]  == "new":
-            logger.debug("Processing new mail at %s" % (event.pathname,))
-            with open(event.pathname, "r") as f:
-                mail_data = f.read()
-                mail = message_from_string(mail_data)
-                owner = mail["Delivered-To"]
-                logger.debug("%s received a new mail" % (owner,))
-                # get user uuid
-                uuid = _get_uuid(owner, self._user, self._password, self._server)
-                # get the pubkey for uuid
-                pubkey = _get_pubkey(uuid, self._user, self._password, self._server)
-                # encrypt the message to the pubkey
-                encrypted = _encrypt_message(pubkey, mail_data)
-                # save the message in a couchdb
-                if _export_message(uuid, encrypted, self._user, self._password, self._server):
-                    # remove the original mail
-                    try:
-                        os.remove(event.pathname)
-                    except Exception as e:
-                        # TODO: better handle exceptions
-                        logger.error(e.message())
+
+def _process_incoming_email(users_db, mail_couchdb_url_prefix, self, filepath, mask):
+    if os.path.split(filepath.dirname())[-1]  == "new":
+        logger.debug("Processing new mail at %s" % (filepath.path,))
+        with filepath.open("r") as f:
+            mail_data = f.read()
+            mail = message_from_string(mail_data)
+            owner = mail["Delivered-To"]
+            logger.debug("%s received a new mail" % (owner,))
+            d = users_db.queryByLoginOrAlias(owner)
+            d.addCallback(_get_pubkey)
+            d.addCallback(_encrypt_message, (mail_data))
+            d.addCallback(_export_message, (mail_couchdb_url_prefix))
+            d.addCallback(_conditional_remove, (filepath))
+
 
 def main():
     epilog = "Copyright 2012 The LEAP Encryption Access Project"
@@ -88,7 +117,7 @@ def main():
         level = logging.WARNING
 
     if config_file is None:
-        config_file = "mail_receiver.cfg"
+        config_file = "leap_mx.cfg"
 
     logger.setLevel(level)
     console = logging.StreamHandler()
@@ -108,24 +137,40 @@ def main():
     config = ConfigParser.ConfigParser()
     config.read(config_file)
 
-    user = config.get("couchdb", "user")
-    password = config.get("couchdb", "password")
+    users_user = config.get("couchdb", "users_user")
+    users_password = config.get("couchdb", "users_password")
+
+    mail_user = config.get("couchdb", "mail_user")
+    mail_password = config.get("couchdb", "mail_password")
+
     server = config.get("couchdb", "server")
+    port = config.get("couchdb", "port")
 
-    wm = pyinotify.WatchManager()
-    mask = pyinotify.IN_CREATE
-    handler = EventHandler(user, password, server)
-    notifier = pyinotify.Notifier(wm, handler)
+    wm = inotify.INotify(reactor)
+    wm.startReading()
 
+    mask = inotify.IN_CREATE
+
+    users_db = couchdbhelper.ConnectedCouchDB(server,
+                                              port=port,
+                                              dbName="users",
+                                              username=users_user,
+                                              password=users_password)
+
+    mail_couch_url_prefix = "http://%s:%s@localhost:%s" % (mail_user,
+                                                           mail_password,
+                                                           port)
+
+    incoming_partial = partial(_process_incoming_email, users_db, mail_couch_url_prefix)
     for section in config.sections():
         if section in ("couchdb"):
             continue
         to_watch = config.get(section, "path")
         recursive = config.getboolean(section, "recursive")
         logger.debug("Watching %s --- Recursive: %s" % (to_watch, recursive))
-        wm.add_watch(to_watch, mask, rec=recursive)
+        wm.watch(filepath.FilePath(to_watch), mask, callbacks=[incoming_partial], recursive=recursive)
 
-    notifier.loop()
+    reactor.run()
 
 if __name__ == "__main__":
     main()
