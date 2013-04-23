@@ -114,7 +114,8 @@ class ConnectedCouchDB(client.CouchDB):
         d = self.openView(docId="User",
                           viewId="by_login_or_alias/",
                           key=alias,
-                          reduce=False)
+                          reduce=False,
+                          include_docs=True)
 
         d.addCallbacks(partial(self._get_uuid, alias), log.err)
 
@@ -135,7 +136,7 @@ class ConnectedCouchDB(client.CouchDB):
         for row in result["rows"]:
             if row["key"] == alias:
                 uuid = row["id"]
-                self._cache[uuid] = row["value"]
+                self._cache[uuid] = row["doc"]["public_key"]
                 return uuid
         return None
 
@@ -161,6 +162,7 @@ if __name__ == "__main__":
     @d.addCallback
     def right(result):
         print "Should be an actual uuid:", result
+        print "Public Key:"
         print cdb.getPubKey(result)
 
     d2 = cdb.queryByLoginOrAlias("asdjaoisdjoiqwjeoi")

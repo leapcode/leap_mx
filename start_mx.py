@@ -22,7 +22,7 @@ import ConfigParser
 import logging
 
 try:
-    from leap.mx import couchdb
+    from leap.mx import couchdbhelper
     from leap.mx.alias_resolver import AliasResolverFactory
 except ImportError, ie:
     print "%s \nExiting... \n" % ie.message
@@ -34,8 +34,6 @@ try:
 except ImportError, ie:
     print "This software requires Twisted>=12.0.2, please see the README for"
     print "help on using virtualenv and pip to obtain requirements."
-
-logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
@@ -53,6 +51,8 @@ if __name__ == "__main__":
                             "Default: mail_receiver.cfg")
 
     opts, _ = parser.parse_known_args()
+
+    logger = logging.getLogger(name='leap')
 
     debug = opts.debug
     config_file = opts.config
@@ -92,11 +92,11 @@ if __name__ == "__main__":
     server = config.get("couchdb", "server")
     port = config.get("couchdb", "port")
 
-    cdb = couchdb.ConnectedCouchDB(server,
-                                   port=port,
-                                   dbName="users",
-                                   username=users_user,
-                                   password=users_password)
+    cdb = couchdbhelper.ConnectedCouchDB(server,
+                                         port=port,
+                                         dbName="users",
+                                         username=users_user,
+                                         password=users_password)
 
     # TODO: use the couchdb for mail
 
