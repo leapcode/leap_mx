@@ -45,13 +45,17 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
     def _to_str(self, result):
         if isinstance(result, unicode):
             result = result.encode("utf8")
+        if result is None:
+            logger.debug("Result not found")
         return result
 
     def get(self, key):
         orig_key = key
         try:
+            logger.debug("Processing key: %s" % (key,))
             key = key.split("@")[0]
             key = key.split("+")[0]
+            logger.debug("Final key to query: %s" % (key,))
         except Exception as e:
             key = orig_key
             logger.exception("%s" % (e,))
