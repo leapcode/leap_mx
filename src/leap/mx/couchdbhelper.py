@@ -20,6 +20,10 @@ Classes for working with CouchDB or BigCouch instances which store email alias
 maps, user UUIDs, and GPG keyIDs.
 """
 
+import logging
+
+from functools import partial
+
 try:
     from paisley import client
 except ImportError:
@@ -32,9 +36,7 @@ except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
 
-from functools import partial
-
-from leap.mx.util import log
+logger = logging.getLogger(__name__)
 
 
 class ConnectedCouchDB(client.CouchDB):
@@ -82,9 +84,9 @@ class ConnectedCouchDB(client.CouchDB):
         @param data: response from the listDB command
         @type data: array
         """
-        log.msg("Available databases:")
+        logger.msg("Available databases:")
         for database in data:
-            log.msg("  * %s" % (database,))
+            logger.msg("  * %s" % (database,))
 
     def createDB(self, dbName):
         """
@@ -117,7 +119,7 @@ class ConnectedCouchDB(client.CouchDB):
                           reduce=False,
                           include_docs=True)
 
-        d.addCallbacks(partial(self._get_uuid, alias), log.err)
+        d.addCallbacks(partial(self._get_uuid, alias), logger.error)
 
         return d
 

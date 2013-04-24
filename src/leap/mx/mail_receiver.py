@@ -17,9 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import uuid as pyuuid
 import logging
 import argparse
 import ConfigParser
+
+import json
 
 from email import message_from_string
 from functools import partial
@@ -28,41 +31,58 @@ from twisted.internet import inotify, reactor
 from twisted.python import filepath
 
 from leap.mx import couchdbhelper
+
+from leap.soledad import LeapDocument
+from leap.soledad.backends.leap_backend import EncryptionSchemes
 from leap.soledad.backends.couch import CouchDatabase
+from leap.common.keymanager import openpgp
 
 logger = logging.getLogger(__name__)
 
 
-def _get_pubkey(uuid):
-    # TODO: implent!
+def _get_pubkey(uuid, cdb):
     logger.debug("Fetching pubkey for %s" % (uuid,))
-    return uuid, ""
+    return uuid, cdb.getPubKey(uuid)
 
-def _encrypt_message(uuid_pubkey, message):
-    # TODO: implement!
+def _encrypt_message(uuid_pubkey, address_message):
     uuid, pubkey = uuid_pubkey
+    address, message = address_message
     logger.debug("Encrypting message to %s's pubkey" % (uuid,))
     logger.debug("Pubkey: %s" % (pubkey,))
 
     if pubkey is None or len(pubkey) == 0:
-        # TODO: This is only for testing!! REMOVE!
-        return uuid, message
+        logger.exception("No public key found")
+        raise Exception("No public key found")
 
-    encrypted = ""
+    doc = LeapDocument(encryption_scheme=EncryptionSchemes.PUBKEY,
+                       doc_id=str(pyuuid.uuid4()))
 
-    return uuid, encrypted
+    def _ascii_to_openpgp_cb(gpg):
+        key = gpg.list_keys().pop()
+        return openpgp._build_key_from_gpg(address, key, pubkey)
+
+    openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
+
+    data = {'incoming': True, 'content': message}
+
+    doc.content = {
+        "_encrypted_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
+    }
+
+    return uuid, doc
 
 
-def _export_message(uuid_message, couch_url):
-    uuid, message = uuid_message
+def _export_message(uuid_doc, couch_url):
+    uuid, doc = uuid_doc
     logger.debug("Exporting message for %s" % (uuid,))
 
     if uuid is None:
         uuid = 0
 
-    db_url = couch_url + '/user-%s' % uuid
-    db = CouchDatabase.open_database(db_url, create=True)
-    doc = db.create_doc({'content': str(message)})
+    db = CouchDatabase(couch_url, "user-%s" % (uuid,))
+    db.put_doc(doc)
+
+    logger.debug("Done exporting")
 
     return True
 
@@ -73,6 +93,7 @@ def _conditional_remove(do_remove, filepath):
         try:
             logger.debug("Removing %s" % (filepath.path,))
             filepath.remove()
+            logger.debug("Done removing")
         except Exception as e:
             # TODO: better handle exceptions
             logger.exception("%s" % (e,))
@@ -85,10 +106,14 @@ def _process_incoming_email(users_db, mail_couchdb_url_prefix, self, filepath, m
             mail_data = f.read()
             mail = message_from_string(mail_data)
             owner = mail["Delivered-To"]
+            owner = owner.split("@")[0]
+            owner = owner.split("+")[0]
+            logger.debug("Mail owner: %s" % (owner,))
+
             logger.debug("%s received a new mail" % (owner,))
             d = users_db.queryByLoginOrAlias(owner)
-            d.addCallback(_get_pubkey)
-            d.addCallback(_encrypt_message, (mail_data))
+            d.addCallback(_get_pubkey, (users_db))
+            d.addCallback(_encrypt_message, (owner, mail_data))
             d.addCallback(_export_message, (mail_couchdb_url_prefix))
             d.addCallback(_conditional_remove, (filepath))
 
