@@ -21,16 +21,20 @@ import sys
 import ConfigParser
 import logging
 
+from functools import partial
+
 try:
-    from leap.mx import couchdbhelper
+    from leap.mx import couchdbhelper, mail_receiver
     from leap.mx.alias_resolver import AliasResolverFactory
 except ImportError, ie:
     print "%s \nExiting... \n" % ie.message
+    raise
     sys.exit(1)
 
 try:
-    from twisted.internet import reactor
+    from twisted.internet import reactor, inotify
     from twisted.internet.endpoints import TCP4ServerEndpoint
+    from twisted.python import filepath
 except ImportError, ie:
     print "This software requires Twisted>=12.0.2, please see the README for"
     print "help on using virtualenv and pip to obtain requirements."
@@ -83,11 +87,8 @@ if __name__ == "__main__":
     config = ConfigParser.ConfigParser()
     config.read(config_file)
 
-    users_user = config.get("couchdb", "users_user")
-    users_password = config.get("couchdb", "users_password")
-
-    mail_user = config.get("couchdb", "mail_user")
-    mail_password = config.get("couchdb", "mail_password")
+    user = config.get("couchdb", "user")
+    password = config.get("couchdb", "password")
 
     server = config.get("couchdb", "server")
     port = config.get("couchdb", "port")
@@ -95,12 +96,31 @@ if __name__ == "__main__":
     cdb = couchdbhelper.ConnectedCouchDB(server,
                                          port=port,
                                          dbName="users",
-                                         username=users_user,
-                                         password=users_password)
+                                         username=user,
+                                         password=password)
 
-    # TODO: use the couchdb for mail
+    # Mail receiver
+    wm = inotify.INotify(reactor)
+    wm.startReading()
 
-    # TODO: make the listening ports configurable
+    mask = inotify.IN_CREATE
+
+    mail_couch_url_prefix = "http://%s:%s@%s:%s" % (user,
+                                                    password,
+                                                    server,
+                                                    port)
+
+    incoming_partial = partial(mail_receiver._process_incoming_email, cdb, mail_couch_url_prefix)
+    for section in config.sections():
+        if section in ("couchdb"):
+            continue
+        to_watch = config.get(section, "path")
+        recursive = config.getboolean(section, "recursive")
+        logger.debug("Watching %s --- Recursive: %s" % (to_watch, recursive))
+        wm.watch(filepath.FilePath(to_watch), mask, callbacks=[incoming_partial], recursive=recursive)
+
+
+    # Alias map
     alias_endpoint = TCP4ServerEndpoint(reactor, 4242)
     alias_endpoint.listen(AliasResolverFactory(couchdb=cdb))
 
