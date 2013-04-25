@@ -55,6 +55,7 @@ if __name__ == "__main__":
 
     debug = opts.debug
     config_file = opts.config
+    logfile = opts.log_file
 
     if debug:
         level = logging.DEBUG
@@ -72,6 +73,13 @@ if __name__ == "__main__":
         '- %(name)s - %(levelname)s - %(message)s')
     console.setFormatter(formatter)
     logger.addHandler(console)
+
+    if logfile is not None:
+        logger.debug('Setting logfile to %s ', logfile)
+        fileh = logging.FileHandler(logfile)
+        fileh.setLevel(logging.DEBUG)
+        fileh.setFormatter(formatter)
+        logger.addHandler(fileh)
 
     logger.info("~~~~~~~~~~~~~~~~~~~")
     logger.info("    LEAP MX")
