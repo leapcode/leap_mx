@@ -26,6 +26,7 @@ from functools import partial
 try:
     from leap.mx import couchdbhelper, mail_receiver
     from leap.mx.alias_resolver import AliasResolverFactory
+    from leap.mx.check_recipient_access import CheckRecipientAccessFactory
 except ImportError, ie:
     print "%s \nExiting... \n" % ie.message
     raise
@@ -123,5 +124,9 @@ if __name__ == "__main__":
     # Alias map
     alias_endpoint = TCP4ServerEndpoint(reactor, 4242)
     alias_endpoint.listen(AliasResolverFactory(couchdb=cdb))
+
+    # Check recipient access
+    check_recipient = TCP4ServerEndpoint(reactor, 2244)
+    check_recipient.listen(CheckRecipientAccessFactory(couchdb=cdb))
 
     reactor.run()
