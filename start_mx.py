@@ -17,20 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import sys
 import ConfigParser
 import logging
 
 from functools import partial
 
-try:
-    from leap.mx import couchdbhelper, mail_receiver
-    from leap.mx.alias_resolver import AliasResolverFactory
-    from leap.mx.check_recipient_access import CheckRecipientAccessFactory
-except ImportError, ie:
-    print "%s \nExiting... \n" % ie.message
-    raise
-    sys.exit(1)
+from leap.mx import couchdbhelper, mail_receiver
+from leap.mx.alias_resolver import AliasResolverFactory
+from leap.mx.check_recipient_access import CheckRecipientAccessFactory
 
 try:
     from twisted.internet import reactor, inotify
