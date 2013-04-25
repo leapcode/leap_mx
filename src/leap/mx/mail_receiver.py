@@ -53,9 +53,11 @@ def _encrypt_message(uuid_pubkey, address_message):
     doc = LeapDocument(encryption_scheme=EncryptionSchemes.PUBKEY,
                        doc_id=str(pyuuid.uuid4()))
 
+    data = {'incoming': True, 'content': message}
+
     if pubkey is None or len(pubkey) == 0:
         doc.content = {
-            "_unencrypted_json": message
+            "_unencrypted_json": json.dumps(data)
         }
         return uuid, doc
 
@@ -64,8 +66,6 @@ def _encrypt_message(uuid_pubkey, address_message):
         return openpgp._build_key_from_gpg(address, key, pubkey)
 
     openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
-
-    data = {'incoming': True, 'content': message}
 
     doc.content = {
         "_encrypted_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
