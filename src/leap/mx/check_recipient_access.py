@@ -22,11 +22,9 @@ Classes for resolving postfix recipient access
 
 import logging
 
-try:
-    from twisted.protocols import postfix
-except ImportError:
-    print "This software requires Twisted. Please see the README file"
-    print "for instructions on getting required dependencies."
+from twisted.protocols import postfix
+
+from leap.mx.alias_resolver import AliasResolverFactory
 
 logger = logging.getLogger(__name__)
 
@@ -39,21 +37,5 @@ class CheckRecipientAccess(postfix.PostfixTCPMapServer):
             self.sendCode(200)
 
 
-class CheckRecipientAccessFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
-
+class CheckRecipientAccessFactory(AliasResolverFactory):
     protocol = CheckRecipientAccess
-
-    def __init__(self, couchdb, *args, **kwargs):
-        postfix.PostfixTCPMapDeferringDictServerFactory.__init__(self, *args, **kwargs)
-        self._cdb = couchdb
-
-    def get(self, key):
-        orig_key = key
-        try:
-            key = key.split("@")[0]
-            key = key.split("+")[0]
-        except Exception as e:
-            key = orig_key
-            logger.exception("%s" % (e,))
-        d = self._cdb.queryByLoginOrAlias(key)
-        return d

@@ -105,7 +105,9 @@ def _process_incoming_email(users_db, mail_couchdb_url_prefix, self, filepath, m
         with filepath.open("r") as f:
             mail_data = f.read()
             mail = message_from_string(mail_data)
-            owner = mail["Delivered-To"]
+            owner = mail["To"]
+            if owner is None:  # default to Delivered-To
+                owner = mail["Delivered-To"]
             owner = owner.split("@")[0]
             owner = owner.split("+")[0]
             logger.debug("Mail owner: %s" % (owner,))

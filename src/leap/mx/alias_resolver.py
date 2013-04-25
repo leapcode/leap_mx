@@ -53,6 +53,10 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         orig_key = key
         try:
             logger.debug("Processing key: %s" % (key,))
+            if key.find("@") == -1:
+                logger.debug("Ignoring key since it's not an email address")
+                return None
+
             key = key.split("@")[0]
             key = key.split("+")[0]
             logger.debug("Final key to query: %s" % (key,))
