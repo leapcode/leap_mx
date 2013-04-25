@@ -138,7 +138,10 @@ class ConnectedCouchDB(client.CouchDB):
         for row in result["rows"]:
             if row["key"] == alias:
                 uuid = row["id"]
-                self._cache[uuid] = row["doc"]["public_key"]
+                try:
+                    self._cache[uuid] = row["doc"]["public_key"]
+                except:
+                    pass  # no public key for this user
                 return uuid
         return None
 
