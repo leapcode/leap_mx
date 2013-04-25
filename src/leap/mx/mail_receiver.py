@@ -50,12 +50,14 @@ def _encrypt_message(uuid_pubkey, address_message):
     logger.debug("Encrypting message to %s's pubkey" % (uuid,))
     logger.debug("Pubkey: %s" % (pubkey,))
 
-    if pubkey is None or len(pubkey) == 0:
-        logger.exception("No public key found")
-        raise Exception("No public key found")
-
     doc = LeapDocument(encryption_scheme=EncryptionSchemes.PUBKEY,
                        doc_id=str(pyuuid.uuid4()))
+
+    if pubkey is None or len(pubkey) == 0:
+        doc.content = {
+            "_unencrypted_json": message
+        }
+        return uuid, doc
 
     def _ascii_to_openpgp_cb(gpg):
         key = gpg.list_keys().pop()
