@@ -20,8 +20,6 @@ Classes for working with CouchDB or BigCouch instances which store email alias
 maps, user UUIDs, and GPG keyIDs.
 """
 
-import logging
-
 from functools import partial
 
 try:
@@ -32,11 +30,10 @@ except ImportError:
 
 try:
     from twisted.internet import defer
+    from twisted.python import log
 except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
-
-logger = logging.getLogger(__name__)
 
 
 class ConnectedCouchDB(client.CouchDB):
@@ -84,9 +81,9 @@ class ConnectedCouchDB(client.CouchDB):
         @param data: response from the listDB command
         @type data: array
         """
-        logger.msg("Available databases:")
+        log.msg("Available databases:")
         for database in data:
-            logger.msg("  * %s" % (database,))
+            log.msg("  * %s" % (database,))
 
     def createDB(self, dbName):
         """
@@ -119,7 +116,7 @@ class ConnectedCouchDB(client.CouchDB):
                           reduce=False,
                           include_docs=True)
 
-        d.addCallbacks(partial(self._get_uuid, alias), logger.error)
+        d.addCallbacks(partial(self._get_uuid, alias), log.err)
 
         return d
 
@@ -138,13 +135,9 @@ class ConnectedCouchDB(client.CouchDB):
         for row in result["rows"]:
             if row["key"] == alias:
                 uuid = row["id"]
-                try:
-                    self._cache[uuid] = row["doc"]["public_key"]
-                except:
-                    pass  # no public key for this user
+                self._cache[uuid] = row["doc"].get("public_key", None)
                 return uuid
         return None
-
 
     def getPubKey(self, uuid):
         pubkey = None

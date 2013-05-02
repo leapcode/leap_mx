@@ -16,190 +16,197 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+MailReceiver service definition
+"""
+
 import os
 import uuid as pyuuid
-import logging
-import argparse
-import ConfigParser
 
 import json
 
 from email import message_from_string
-from functools import partial
 
-from twisted.internet import inotify, reactor
-from twisted.python import filepath
-
-from leap.mx import couchdbhelper
+from twisted.application.service import Service
+from twisted.internet import inotify
+from twisted.python import filepath, log
 
 from leap.soledad import LeapDocument
 from leap.soledad.backends.leap_backend import EncryptionSchemes
 from leap.soledad.backends.couch import CouchDatabase
 from leap.common.keymanager import openpgp
 
-logger = logging.getLogger(__name__)
 
+class MailReceiver(Service):
+    """
+    Service that monitors incoming email and processes it
+    """
 
-def _get_pubkey(uuid, cdb):
-    logger.debug("Fetching pubkey for %s" % (uuid,))
-    return uuid, cdb.getPubKey(uuid)
+    def __init__(self, mail_couch_url, users_cdb, directories):
+        """
+        Constructor
 
-def _encrypt_message(uuid_pubkey, address_message):
-    uuid, pubkey = uuid_pubkey
-    address, message = address_message
-    logger.debug("Encrypting message to %s's pubkey" % (uuid,))
-    logger.debug("Pubkey: %s" % (pubkey,))
+        @param mail_couch_url: URL prefix for the couchdb where mail
+        should be stored
+        @type mail_couch_url: str
+        @param users_cdb: CouchDB instance from where to get the uuid
+        and pubkey for a user
+        @type users_cdb: ConnectedCouchDB
+        @param directories: list of directories to monitor
+        @type directories: list of tuples (path: str, recursive: bool)
+        """
+        # Service doesn't define an __init__
+        self._mail_couch_url = mail_couch_url
+        self._users_cdb = users_cdb
+        self._directories = directories
 
-    doc = LeapDocument(encryption_scheme=EncryptionSchemes.PUBKEY,
-                       doc_id=str(pyuuid.uuid4()))
+    def startService(self):
+        """
+        Starts the MailReceiver service
+        """
+        Service.startService(self)
+        wm = inotify.INotify()
+        wm.startReading()
 
-    data = {'incoming': True, 'content': message}
+        mask = inotify.IN_CREATE
 
-    if pubkey is None or len(pubkey) == 0:
+        for directory, recursive in self._directories:
+            log.msg("Watching %s --- Recursive: %s" % (directory, recursive))
+            wm.watch(filepath.FilePath(directory), mask, callbacks=[self._process_incoming_email], recursive=recursive)
+
+    def _get_pubkey(self, uuid):
+        """
+        Given a UUID for a user, retrieve its public key
+
+        @param uuid: UUID for a user
+        @type uuid: str
+
+        @return: uuid, public key
+        @rtype: tuple of (str, str)
+        """
+        log.msg("Fetching pubkey for %s" % (uuid,))
+        return uuid, self._users_cdb.getPubKey(uuid)
+
+    def _encrypt_message(self, uuid_pubkey, address, message):
+        """
+        Given a UUID, a public key, address and a message, it encrypts
+        the message to that public key.
+        The address is needed in order to build the OpenPGPKey object.
+
+        @param uuid_pubkey: tuple that holds the uuid and the public
+        key as it is returned by the previous call in the chain
+        @type uuid_pubkey: tuple (str, str)
+        @param address: mail address for this message
+        @type address: str
+        @param message: message contents
+        @type message: str
+
+        @return: uuid, doc to sync with Soledad
+        @rtype: tuple(str, LeapDocument)
+        """
+        uuid, pubkey = uuid_pubkey
+        log.msg("Encrypting message to %s's pubkey" % (uuid,))
+        log.msg("Pubkey: %s" % (pubkey,))
+
+        doc = LeapDocument(doc_id=str(pyuuid.uuid4()))
+
+        data = {'incoming': True, 'content': message}
+
+        if pubkey is None or len(pubkey) == 0:
+            doc.content = {
+                "_encryption_scheme": EncryptionSchemes.NONE,
+                "_unencrypted_json": json.dumps(data)
+            }
+            return uuid, doc
+
+        def _ascii_to_openpgp_cb(gpg):
+            key = gpg.list_keys().pop()
+            return openpgp._build_key_from_gpg(address, key, pubkey)
+
+        openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
+
         doc.content = {
-            "_unencrypted_json": json.dumps(data)
+            "_encryption_scheme": EncryptionSchemes.PUBKEY,
+            "_encrypted_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
         }
+
         return uuid, doc
 
-    def _ascii_to_openpgp_cb(gpg):
-        key = gpg.list_keys().pop()
-        return openpgp._build_key_from_gpg(address, key, pubkey)
+    def _export_message(self, uuid_doc):
+        """
+        Given a UUID and a LeapDocument, it saves it directly in the
+        couchdb that serves as a backend for Soledad, in a db
+        accessible to the recipient of the mail
 
-    openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
+        @param uuid_doc: tuple that holds the UUID and LeapDocument
+        @type uuid_doc: tuple(str, LeapDocument)
 
-    doc.content = {
-        "_encrypted_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
-    }
+        @return: True if it's ok to remove the message, False
+        otherwise
+        @rtype: bool
+        """
+        uuid, doc = uuid_doc
+        log.msg("Exporting message for %s" % (uuid,))
 
-    return uuid, doc
+        if uuid is None:
+            uuid = 0
 
+        db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
+        db.put_doc(doc)
 
-def _export_message(uuid_doc, couch_url):
-    uuid, doc = uuid_doc
-    logger.debug("Exporting message for %s" % (uuid,))
+        log.msg("Done exporting")
 
-    if uuid is None:
-        uuid = 0
+        return True
 
-    db = CouchDatabase(couch_url, "user-%s" % (uuid,))
-    db.put_doc(doc)
+    def _conditional_remove(self, do_remove, filepath):
+        """
+        Removes the message if do_remove is True
 
-    logger.debug("Done exporting")
+        @param do_remove: True if the message should be removed, False
+        otherwise
+        @type do_remove: bool
+        @param filepath: path to the mail
+        @type filepath: twisted.python.filepath.FilePath
+        """
+        if do_remove:
+            # remove the original mail
+            try:
+                log.msg("Removing %s" % (filepath.path,))
+                filepath.remove()
+                log.msg("Done removing")
+            except:
+                log.err()
 
-    return True
+    def _process_incoming_email(self, otherself, filepath, mask):
+        """
+        Callback that processes incoming email
 
+        @param otherself: Watch object for the current callback from
+        inotify
+        @type otherself: twisted.internet.inotify._Watch
+        @param filepath: Path of the file that changed
+        @type filepath: twisted.python.filepath.FilePath
+        @param mask: identifier for the type of change that triggered
+        this callback
+        @type mask: int
+        """
+        if os.path.split(filepath.dirname())[-1]  == "new":
+            log.msg("Processing new mail at %s" % (filepath.path,))
+            with filepath.open("r") as f:
+                mail_data = f.read()
+                mail = message_from_string(mail_data)
+                owner = mail["To"]
+                if owner is None:  # default to Delivered-To
+                    owner = mail["Delivered-To"]
+                owner = owner.split("@")[0]
+                owner = owner.split("+")[0]
+                log.msg("Mail owner: %s" % (owner,))
 
-def _conditional_remove(do_remove, filepath):
-    if do_remove:
-        # remove the original mail
-        try:
-            logger.debug("Removing %s" % (filepath.path,))
-            filepath.remove()
-            logger.debug("Done removing")
-        except Exception as e:
-            # TODO: better handle exceptions
-            logger.exception("%s" % (e,))
+                log.msg("%s received a new mail" % (owner,))
+                d = self._users_cdb.queryByLoginOrAlias(owner)
+                d.addCallbacks(self._get_pubkey, log.err)
+                d.addCallbacks(self._encrypt_message, log.err, (owner, mail_data))
+                d.addCallbacks(self._export_message, log.err)
+                d.addCallbacks(self._conditional_remove, log.err, (filepath,))
+                d.addErrback(log.err)
 
-
-def _process_incoming_email(users_db, mail_couchdb_url_prefix, self, filepath, mask):
-    if os.path.split(filepath.dirname())[-1]  == "new":
-        logger.debug("Processing new mail at %s" % (filepath.path,))
-        with filepath.open("r") as f:
-            mail_data = f.read()
-            mail = message_from_string(mail_data)
-            owner = mail["To"]
-            if owner is None:  # default to Delivered-To
-                owner = mail["Delivered-To"]
-            owner = owner.split("@")[0]
-            owner = owner.split("+")[0]
-            logger.debug("Mail owner: %s" % (owner,))
-
-            logger.debug("%s received a new mail" % (owner,))
-            d = users_db.queryByLoginOrAlias(owner)
-            d.addCallback(_get_pubkey, (users_db))
-            d.addCallback(_encrypt_message, (owner, mail_data))
-            d.addCallback(_export_message, (mail_couchdb_url_prefix))
-            d.addCallback(_conditional_remove, (filepath))
-
-
-def main():
-    epilog = "Copyright 2012 The LEAP Encryption Access Project"
-    parser = argparse.ArgumentParser(description="""LEAP MX Mail receiver""", epilog=epilog)
-    parser.add_argument('-d', '--debug', action="store_true",
-                        help="Launches the LEAP MX mail receiver with debug output")
-    parser.add_argument('-l', '--logfile', metavar="LOG FILE", nargs='?',
-                        action="store", dest="log_file",
-                        help="Writes the logs to the specified file")
-    parser.add_argument('-c', '--config', metavar="CONFIG FILE", nargs='?',
-                        action="store", dest="config",
-                        help="Where to look for the configuration file. " \
-                            "Default: mail_receiver.cfg")
-
-    opts, _ = parser.parse_known_args()
-
-    debug = opts.debug
-    config_file = opts.config
-
-    if debug:
-        level = logging.DEBUG
-    else:
-        level = logging.WARNING
-
-    if config_file is None:
-        config_file = "leap_mx.cfg"
-
-    logger.setLevel(level)
-    console = logging.StreamHandler()
-    console.setLevel(level)
-    formatter = logging.Formatter(
-        '%(asctime)s '
-        '- %(name)s - %(levelname)s - %(message)s')
-    console.setFormatter(formatter)
-    logger.addHandler(console)
-
-    logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    logger.info("    LEAP MX Mail receiver")
-    logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
-    logger.info("Reading configuration from %s" % (config_file,))
-
-    config = ConfigParser.ConfigParser()
-    config.read(config_file)
-
-    users_user = config.get("couchdb", "users_user")
-    users_password = config.get("couchdb", "users_password")
-
-    mail_user = config.get("couchdb", "mail_user")
-    mail_password = config.get("couchdb", "mail_password")
-
-    server = config.get("couchdb", "server")
-    port = config.get("couchdb", "port")
-
-    wm = inotify.INotify(reactor)
-    wm.startReading()
-
-    mask = inotify.IN_CREATE
-
-    users_db = couchdbhelper.ConnectedCouchDB(server,
-                                              port=port,
-                                              dbName="users",
-                                              username=users_user,
-                                              password=users_password)
-
-    mail_couch_url_prefix = "http://%s:%s@localhost:%s" % (mail_user,
-                                                           mail_password,
-                                                           port)
-
-    incoming_partial = partial(_process_incoming_email, users_db, mail_couch_url_prefix)
-    for section in config.sections():
-        if section in ("couchdb"):
-            continue
-        to_watch = config.get(section, "path")
-        recursive = config.getboolean(section, "recursive")
-        logger.debug("Watching %s --- Recursive: %s" % (to_watch, recursive))
-        wm.watch(filepath.FilePath(to_watch), mask, callbacks=[incoming_partial], recursive=recursive)
-
-    reactor.run()
-
-if __name__ == "__main__":
-    main()

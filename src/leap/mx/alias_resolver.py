@@ -24,17 +24,14 @@ TODO:
       controlling concurrent connections and throttling resource consumption.
 """
 
-import logging
-
 try:
     # TODO: we should probably use the system alias somehow
     # from twisted.mail      import alias
     from twisted.protocols import postfix
+    from twisted.python import log
 except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
-
-logger = logging.getLogger(__name__)
 
 
 class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
@@ -46,23 +43,24 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         if isinstance(result, unicode):
             result = result.encode("utf8")
         if result is None:
-            logger.debug("Result not found")
+            log.msg("Result not found")
         return result
 
     def get(self, key):
-        orig_key = key
         try:
-            logger.debug("Processing key: %s" % (key,))
+            log.msg("Processing key: %s" % (key,))
             if key.find("@") == -1:
-                logger.debug("Ignoring key since it's not an email address")
+                log.msg("Ignoring key since it's not an email address")
                 return None
 
             key = key.split("@")[0]
             key = key.split("+")[0]
-            logger.debug("Final key to query: %s" % (key,))
-        except Exception as e:
-            key = orig_key
-            logger.exception("%s" % (e,))
-        d = self._cdb.queryByLoginOrAlias(key)
-        d.addCallback(self._to_str)
-        return d
+            log.msg("Final key to query: %s" % (key,))
+            d = self._cdb.queryByLoginOrAlias(key)
+            d.addCallback(self._to_str)
+            d.addErrback(log.err)
+            return d
+        except:
+            log.err()
+
+        return None
