@@ -20,13 +20,9 @@
 Classes for resolving postfix recipient access
 """
 
-import logging
-
 from twisted.protocols import postfix
 
 from leap.mx.alias_resolver import AliasResolverFactory
-
-logger = logging.getLogger(__name__)
 
 
 class CheckRecipientAccess(postfix.PostfixTCPMapServer):
