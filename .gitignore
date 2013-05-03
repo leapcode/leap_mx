@@ -17,6 +17,8 @@ develop-eggs
 .installed.cfg
 lib
 lib64
+MANIFEST
+PKG-INFO
 
 # Installer logs
 pip-log.txt
@@ -36,6 +38,10 @@ nosetests.xml
 
 # Don't upload private things
 *.private
+
+# and vim's
+*.swp
+*.swo
 
 # Ignore emacs temporary files
 *~

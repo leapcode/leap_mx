@@ -1,25 +1,48 @@
 # -*- coding: utf-8 -*-
 # setup.py
-# Copyleft (C) 2013 LEAP
+# Copyright (C) 2013 LEAP
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 setup file for leap.mx
 """
 from setuptools import setup, find_packages
 
-requirements = [
-    "twisted",
-    #...
-]
+from pkg.utils.reqs import parse_requirements
 
-# XXX add classifiers, docs
+trove_classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Environment :: No Input/Output (Daemon)',
+    'Framework :: Twisted',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: GNU Affero General Public License v3'
+    'or later (AGPLv3+)',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 2.6',
+    'Programming Language :: Python :: 2.7',
+    'Topic :: Communications :: Email',
+    'Topic :: Security :: Cryptography',
+]
 
 setup(
     name='leap.mx',
-    version='0.0.1',
-    url='https://leap.se/',
-    license='',
-    author="Isis Agora Lovecruft",
-    author_email="<isis@leap.se> 0x2cdb8b35",
+    version="0.2.0",
+    url="http://github.com/leapcode/leap_mx",
+    license='AGPLv3+',
+    author='The LEAP Encryption Access Project',
+    author_email='info@leap.se',
     description=("An asynchronous, transparently-encrypting remailer "
                  "for the LEAP platform"),
     long_description=(
@@ -30,5 +53,8 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     #test_suite='leap.mx.tests',
-    install_requires=requirements,
+    install_requires=parse_requirements(),
+    classifiers=trove_classifiers,
+    data_files = [("/etc/leap/", ["mx.tac"]),
+                  ("/etc/init.d/", ["pkg/leap_mx"])]
 )

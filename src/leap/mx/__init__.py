@@ -14,10 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 Module initialization file for leap.mx .
 """
-from leap.mx.util import version
 
 __all__ = ['alias_resolver', 'couchdbhelper']
