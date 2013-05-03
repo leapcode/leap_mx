@@ -114,8 +114,8 @@ class MailReceiver(Service):
 
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
-                "_encryption_scheme": EncryptionSchemes.NONE,
-                "_unencrypted_json": json.dumps(data)
+                "_enc_scheme": EncryptionSchemes.NONE,
+                "_enc_json": json.dumps(data)
             }
             return uuid, doc
 
@@ -126,8 +126,8 @@ class MailReceiver(Service):
         openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
 
         doc.content = {
-            "_encryption_scheme": EncryptionSchemes.PUBKEY,
-            "_encrypted_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
+            "_enc_scheme": EncryptionSchemes.PUBKEY,
+            "_enc_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
         }
 
         return uuid, doc
