@@ -72,7 +72,9 @@ class MailReceiver(Service):
 
         for directory, recursive in self._directories:
             log.msg("Watching %s --- Recursive: %s" % (directory, recursive))
-            wm.watch(filepath.FilePath(directory), mask, callbacks=[self._process_incoming_email], recursive=recursive)
+            wm.watch(filepath.FilePath(directory), mask,
+                     callbacks=[self._process_incoming_email],
+                     recursive=recursive)
 
     def _get_pubkey(self, uuid):
         """
@@ -127,7 +129,8 @@ class MailReceiver(Service):
 
         doc.content = {
             "_enc_scheme": EncryptionSchemes.PUBKEY,
-            "_enc_json": openpgp.encrypt_asym(json.dumps(data), openpgp_key)
+            "_enc_json": openpgp.encrypt_asym(json.dumps(data),
+                                              openpgp_key)
         }
 
         return uuid, doc
@@ -198,6 +201,9 @@ class MailReceiver(Service):
                 owner = mail["To"]
                 if owner is None:  # default to Delivered-To
                     owner = mail["Delivered-To"]
+                if owner is None:
+                    log.err("Malformed mail, neither To: nor "
+                            "Delivered-To: field")
                 owner = owner.split("@")[0]
                 owner = owner.split("+")[0]
                 log.msg("Mail owner: %s" % (owner,))
@@ -205,8 +211,10 @@ class MailReceiver(Service):
                 log.msg("%s received a new mail" % (owner,))
                 d = self._users_cdb.queryByLoginOrAlias(owner)
                 d.addCallbacks(self._get_pubkey, log.err)
-                d.addCallbacks(self._encrypt_message, log.err, (owner, mail_data))
+                d.addCallbacks(self._encrypt_message, log.err,
+                               (owner, mail_data))
                 d.addCallbacks(self._export_message, log.err)
-                d.addCallbacks(self._conditional_remove, log.err, (filepath,))
+                d.addCallbacks(self._conditional_remove, log.err,
+                               (filepath,))
                 d.addErrback(log.err)
 

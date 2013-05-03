@@ -1,0 +1,50 @@
+#!/bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+pidfile=/var/run/leap_mx.pid \
+rundir=/var/lib/leap_mx/ \
+file=/etc/leap/mx \
+logfile=/var/log/leap_mx.log
+
+[ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
+
+test -x /usr/bin/twistd || exit 0
+test -r $file || exit 0
+test -r /etc/leap/ || exit 0
+
+
+case "$1" in
+    start)
+        echo -n "Starting leap_mx: twistd"
+        start-stop-daemon --start --quiet --exec /usr/bin/twistd -- \
+                          --pidfile=$pidfile \
+                          --rundir=$rundir \
+                          --python=$file \
+                          --logfile=$logfile
+        echo "."
+    ;;
+
+    stop)
+        echo -n "Stopping leap_mx: twistd"
+        start-stop-daemon --stop --quiet  \
+            --pidfile $pidfile
+        echo "."
+    ;;
+
+    restart)
+        $0 stop
+        $0 start
+    ;;
+
+    force-reload)
+        $0 restart
+    ;;
+
+    *)
+        echo "Usage: /etc/init.d/leap_mx {start|stop|restart|force-reload}" >&2
+        exit 1
+    ;;
+esac
+
+exit 0
