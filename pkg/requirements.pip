@@ -2,7 +2,7 @@ Twisted>=12.0.2
 paisley>=0.3.1
 ## XXX change me to whatever you name the package in pypi
 python-gnupg>=0.3.0
-leap.common>=0.0.2-dev
+leap.common>=0.2.3-dev
 
 ###############
 # Development #
