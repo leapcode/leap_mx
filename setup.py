@@ -55,6 +55,6 @@ setup(
     #test_suite='leap.mx.tests',
     install_requires=parse_requirements(),
     classifiers=trove_classifiers,
-    data_files = [("/etc/leap/", ["mx.tac"]),
+    data_files = [("/usr/local/bin/", ["mx.tac"]),
                   ("/etc/init.d/", ["pkg/leap_mx"])]
 )

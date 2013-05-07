@@ -4,7 +4,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 pidfile=/var/run/leap_mx.pid \
 rundir=/var/lib/leap_mx/ \
-file=/etc/leap/mx.tac \
+file=/usr/local/bin/mx.tac \
 logfile=/var/log/leap_mx.log
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
