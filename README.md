@@ -46,7 +46,7 @@ $ sudo apt-get install python2.7 python-dev python-virtualenv virtualenvwrapper
 $ git clone https://github.com/leapcode/leap_mx.git leap_mx
 $ export WORKON_LEAPMX=${PWD}/leap_mx
 $ source /usr/local/bin/virtualenvwrapper.sh
-$ mkvirtualenv -a $WORKON_LEAPMX -r ${WORKON_LEAPMX}/pkg/mx-requirements.pip \
+$ mkvirtualenv -a $WORKON_LEAPMX -r ${WORKON_LEAPMX}/pkg/requirements.pip \
       --no-site-packages --setuptools --unzip-setuptools leap_mx
 ~~~
 
@@ -55,7 +55,7 @@ To get started quickly, without virtualenv, do:
 ~~~
 $ sudo apt-get install python git
 $ git clone https://github.com/leapcode/leap_mx.git
-# pip install -r ./leap_mx/pkg/mx-requirements.pip
+# pip install -r ./leap_mx/pkg/requirements.pip
 ~~~
 Although, **it is advised** to install inside a python virtualenv.
 
@@ -66,14 +66,14 @@ To get running, clone this repo, and (assuming you've already set up your
 virtualenv and obtained all the requirements) do:
 
 ~~~
-$ ./start_mx.py --help
+$ twistd -ny mx.tac
 ~~~
 
 ## [hacking](#hacking) ##
 =========================
 Please see the HACKING and DESIGN docs.
 
-Our bugtracker is [here](https://leap.se/code/projects/eip_server/issue/new).
+Our bugtracker is [here](https://leap.se/code/projects/eip/issue/new).
 
 Please use that for bug reports and feature requests instead of github's
 tracker. We're using github for code commenting and review between
