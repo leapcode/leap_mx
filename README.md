@@ -29,7 +29,7 @@ is provided. It does the following:
  virtualenvwrapper in the bootstrap virtualenv.
  4. Obtain a copy of leap_mx with git clone.
  5. Use ```mkvirtualenv``` included in the virtualenvwrapper inside the
- bootstrap virtualenv to install a project virtualenv for leap_mx. 
+ bootstrap virtualenv to install a project virtualenv for leap_mx.
 
 To use the bootstrap script, do:
 ~~~
@@ -43,7 +43,7 @@ To install python, virtualenv, and get started, do:
 
 ~~~
 $ sudo apt-get install python2.7 python-dev python-virtualenv virtualenvwrapper
-$ git clone https://github.com/isislovecruft/leap_mx.git leap_mx
+$ git clone https://github.com/leapcode/leap_mx.git leap_mx
 $ export WORKON_LEAPMX=${PWD}/leap_mx
 $ source /usr/local/bin/virtualenvwrapper.sh
 $ mkvirtualenv -a $WORKON_LEAPMX -r ${WORKON_LEAPMX}/pkg/mx-requirements.pip \
@@ -54,10 +54,10 @@ $ mkvirtualenv -a $WORKON_LEAPMX -r ${WORKON_LEAPMX}/pkg/mx-requirements.pip \
 To get started quickly, without virtualenv, do:
 ~~~
 $ sudo apt-get install python git
-$ git clone https://github.com/isislovecruft/leap_mx.git
+$ git clone https://github.com/leapcode/leap_mx.git
 # pip install -r ./leap_mx/pkg/mx-requirements.pip
 ~~~
-Although, **it is advised** to install inside a python virtualenv. 
+Although, **it is advised** to install inside a python virtualenv.
 
 ## [running](#running) ##
 =========================
@@ -73,7 +73,7 @@ $ ./start_mx.py --help
 =========================
 Please see the HACKING and DESIGN docs.
 
-Our bugtracker is [here](https://leap.se/code/projects/eip_server/issue/new). 
+Our bugtracker is [here](https://leap.se/code/projects/eip_server/issue/new).
 
 Please use that for bug reports and feature requests instead of github's
 tracker. We're using github for code commenting and review between
