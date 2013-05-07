@@ -15,6 +15,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Module intialization file for leap.mx .
+Module initialization file for leap.mx .
 """
-__all__ = ['alias_resolver', 'couchdbhelper']
