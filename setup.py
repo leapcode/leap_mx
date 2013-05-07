@@ -29,7 +29,7 @@ trove_classifiers = [
     'License :: OSI Approved :: GNU Affero General Public License v3'
     'or later (AGPLv3+)',
     'Natural Language :: English',
-    'Operating System :: OS Independent',
+    'Operating System :: POSIX :: Linux',
     'Programming Language :: Python :: 2.6',
     'Programming Language :: Python :: 2.7',
     'Topic :: Communications :: Email',
