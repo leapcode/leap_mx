@@ -27,7 +27,7 @@ trove_classifiers = [
     'Framework :: Twisted',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: GNU Affero General Public License v3'
-    'or later (AGPLv3+)',
+    ' or later (AGPLv3+)',
     'Natural Language :: English',
     'Operating System :: POSIX :: Linux',
     'Programming Language :: Python :: 2.6',
