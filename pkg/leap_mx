@@ -9,7 +9,6 @@ logfile=/var/log/leap_mx.log
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
 
-test -x /usr/bin/twistd || exit 0
 test -r $file || exit 0
 test -r /etc/leap/ || exit 0
 
@@ -18,7 +17,7 @@ case "$1" in
     start)
         echo -n "Starting leap_mx: twistd"
         HOME="/var/lib/leap_mx/" \
-          start-stop-daemon --start --quiet --exec /usr/bin/twistd -- \
+          start-stop-daemon --start --quiet --exec /usr/local/bin/twistd -- \
                           --pidfile=$pidfile \
                           --rundir=$rundir \
                           --python=$file \
