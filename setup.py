@@ -17,6 +17,7 @@
 """
 setup file for leap.mx
 """
+import os
 from setuptools import setup, find_packages
 
 from pkg.utils.reqs import parse_requirements
@@ -36,9 +37,19 @@ trove_classifiers = [
     'Topic :: Security :: Cryptography',
 ]
 
+if os.environ.get("VIRTUAL_ENV", None):
+    data_files = None
+else:
+    # XXX use a script entrypoint for mx instead, it will
+    # be automatically
+    # placed by distutils, using whatever interpreter is
+    # available.
+    data_files = [("/usr/local/bin/", ["mx.tac"]),
+                  ("/etc/init.d/", ["pkg/leap_mx"])]
 setup(
     name='leap.mx',
-    version="0.2.0",
+    version="0.2.1-dev",
+    # bump also src/leap/mx/__init__
     url="http://github.com/leapcode/leap_mx",
     license='AGPLv3+',
     author='The LEAP Encryption Access Project',
@@ -55,6 +66,5 @@ setup(
     #test_suite='leap.mx.tests',
     install_requires=parse_requirements(),
     classifiers=trove_classifiers,
-    data_files = [("/usr/local/bin/", ["mx.tac"]),
-                  ("/etc/init.d/", ["pkg/leap_mx"])]
+    data_files=data_files
 )

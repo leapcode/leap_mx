@@ -17,3 +17,4 @@
 """
 Module initialization file for leap.mx .
 """
+__version__ = "0.2.1-dev"
