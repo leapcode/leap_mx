@@ -1,4 +1,3 @@
 include data/*
 include pkg/*
 include pkg/utils/*
-include mx.tac
