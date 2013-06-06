@@ -1,0 +1,12 @@
+Source: leap-mx
+Maintainer: Micah Anderson <micah@debian.org>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 9)
+Standards-Version: 3.9.4
+
+Package: python-leap-mx
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: An asynchronous, transparently-encrypting remailer for the L
+ An asynchronous, transparently-encrypting remailer using BigCouch/CouchDB and PGP/GnuPG, written in Twisted Python.
