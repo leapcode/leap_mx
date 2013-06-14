@@ -44,11 +44,11 @@ else:
     # be automatically
     # placed by distutils, using whatever interpreter is
     # available.
-    data_files = [("/usr/local/bin/", ["mx.tac"]),
+    data_files = [("/usr/local/bin/", ["pkg/mx.tac"]),
                   ("/etc/init.d/", ["pkg/leap_mx"])]
 setup(
     name='leap.mx',
-    version="0.2.1-dev",
+    version="0.2.2-dev",
     # bump also src/leap/mx/__init__
     url="http://github.com/leapcode/leap_mx",
     license='AGPLv3+',
