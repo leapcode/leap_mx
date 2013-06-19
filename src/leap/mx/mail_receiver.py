@@ -31,10 +31,10 @@ from twisted.application.service import Service
 from twisted.internet import inotify
 from twisted.python import filepath, log
 
-from leap.soledad import LeapDocument
-from leap.soledad.backends.leap_backend import EncryptionSchemes
-from leap.soledad.backends.couch import CouchDatabase
-from leap.common.keymanager import openpgp
+from leap.soledad.document import SoledadDocument
+from leap.soledad.target import EncryptionSchemes
+from leap.soledad_server.couch import CouchDatabase
+from leap.keymanager import openpgp
 
 
 class MailReceiver(Service):
@@ -104,13 +104,13 @@ class MailReceiver(Service):
         @type message: str
 
         @return: uuid, doc to sync with Soledad
-        @rtype: tuple(str, LeapDocument)
+        @rtype: tuple(str, SoledadDocument)
         """
         uuid, pubkey = uuid_pubkey
         log.msg("Encrypting message to %s's pubkey" % (uuid,))
         log.msg("Pubkey: %s" % (pubkey,))
 
-        doc = LeapDocument(doc_id=str(pyuuid.uuid4()))
+        doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
         data = {'incoming': True, 'content': message}
 
@@ -137,12 +137,12 @@ class MailReceiver(Service):
 
     def _export_message(self, uuid_doc):
         """
-        Given a UUID and a LeapDocument, it saves it directly in the
+        Given a UUID and a SoledadDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
         accessible to the recipient of the mail
 
-        @param uuid_doc: tuple that holds the UUID and LeapDocument
-        @type uuid_doc: tuple(str, LeapDocument)
+        @param uuid_doc: tuple that holds the UUID and SoledadDocument
+        @type uuid_doc: tuple(str, SoledadDocument)
 
         @return: True if it's ok to remove the message, False
         otherwise
