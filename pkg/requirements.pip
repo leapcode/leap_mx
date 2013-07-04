@@ -2,9 +2,9 @@ Twisted>=12.0.2
 paisley>=0.3.1
 ## XXX change me to whatever you name the package in pypi
 python-gnupg>=0.3.0
-leap-client>=0.2.3-dev
 leap.soledad
 leap.soledad_server
+leap.keymanager>=0.2.1
 
 ###############
 # Development #
