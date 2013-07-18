@@ -44,7 +44,7 @@ else:
     # be automatically
     # placed by distutils, using whatever interpreter is
     # available.
-    data_files = [("/usr/local/bin/", ["pkg/mx.tac"]),
+    data_files = [("/usr/share/app/", ["pkg/leap_mx.tac"]),
                   ("/etc/init.d/", ["pkg/leap_mx"])]
 setup(
     name='leap.mx',

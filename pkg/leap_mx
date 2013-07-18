@@ -4,8 +4,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 pidfile=/var/run/leap_mx.pid \
 rundir=/var/lib/leap_mx/ \
-file=/usr/local/bin/mx.tac \
+file=/usr/share/app/leap_mx.tac \
 logfile=/var/log/leap_mx.log
+twistd_path=/usr/bin/twistd
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
 
@@ -17,7 +18,7 @@ case "$1" in
     start)
         echo -n "Starting leap_mx: twistd"
         HOME="/var/lib/leap_mx/" \
-          start-stop-daemon --start --quiet --exec /usr/local/bin/twistd -- \
+          start-stop-daemon --start --quiet --exec $twistd_path -- \
                           --pidfile=$pidfile \
                           --rundir=$rundir \
                           --python=$file \
