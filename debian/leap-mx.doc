@@ -1,3 +1,5 @@
-../doc
-../README.md
-../VERSION.md
+doc/*
+doc/sample-config/*
+README.md
+VERSION.md
+VERSION.md
