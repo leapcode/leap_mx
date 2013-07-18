@@ -8,5 +8,6 @@ Standards-Version: 3.9.4
 Package: leap-mx
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Description: An asynchronous, transparently-encrypting remailer for the LEAP platform
- An asynchronous, transparently-encrypting remailer using BigCouch/CouchDB and OpenPGP, written in Twisted Python.
+Description: Asynchronous, transparently-encrypting remailer for the LEAP platform
+ Asynchronous, transparently-encrypting remailer using BigCouch/CouchDB
+ and OpenPGP, written in Twisted Python.
