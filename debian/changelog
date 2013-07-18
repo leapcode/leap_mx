@@ -1,3 +1,14 @@
+leap-mx (0.2.2.1) unstable; urgency=low
+
+  * Fix installation of documentation
+  * Fix package descriptions
+  * Install initscript using packaging tools
+  * Add LSB headers to initscript
+  * Add debian/copyright
+  * Fix permissions on leap_mx.tac
+
+ -- Micah Anderson <micah@debian.org>  Thu, 18 Jul 2013 15:58:31 -0400
+
 leap-mx (0.2.2) unstable; urgency=low
 
   * Initial Debian package
