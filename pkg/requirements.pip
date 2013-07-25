@@ -4,7 +4,7 @@ paisley>=0.3.1
 python-gnupg>=0.3.0
 leap.soledad
 leap.soledad_server
-leap.keymanager>=0.2.1
+leap.keymanager>=0.2.0
 
 ###############
 # Development #
