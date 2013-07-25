@@ -1,3 +1,9 @@
+leap-mx (0.2.2.2) unstable; urgency=low
+
+  * Added status command to initscript
+
+ -- Micah Anderson <micah@debian.org>  Thu, 25 Jul 2013 14:03:18 -0400
+
 leap-mx (0.2.2.1) unstable; urgency=low
 
   * Fix installation of documentation

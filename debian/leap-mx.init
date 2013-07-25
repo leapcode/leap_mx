@@ -10,12 +10,11 @@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
-
-pidfile=/var/run/leap_mx.pid \
-rundir=/var/lib/leap_mx/ \
-file=/usr/share/app/leap_mx.tac \
-logfile=/var/log/leap_mx.log
-twistd_path=/usr/bin/twistd
+PIDFILE=/var/run/leap_mx.pid
+RUNDIR=/var/lib/leap_mx/
+FILE=/usr/share/app/leap_mx.tac
+LOGFILE=/var/log/leap_mx.log
+TWISTD_PATH=/usr/bin/twistd
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
 
@@ -51,8 +50,12 @@ case "$1" in
         $0 restart
     ;;
 
+    status)
+        status_of_proc -p $PIDFILE $TWISTD_PATH leap_mx && exit 0 || exit $?
+    ;;
+
     *)
-        echo "Usage: /etc/init.d/leap_mx {start|stop|restart|force-reload}" >&2
+        echo "Usage: /etc/init.d/leap_mx {start|stop|restart|force-reload|status}" >&2
         exit 1
     ;;
 esac
