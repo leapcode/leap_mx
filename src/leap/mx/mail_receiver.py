@@ -116,18 +116,20 @@ class MailReceiver(Service):
 
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
+                "incoming": True,
                 "_enc_scheme": EncryptionSchemes.NONE,
                 "_enc_json": json.dumps(data)
             }
             return uuid, doc
 
-        def _ascii_to_openpgp_cb(gpg):
+        openpgp_key = None
+        with openpgp.temporary_gpgwrapper() as gpg:
+            gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
-            return openpgp._build_key_from_gpg(address, key, pubkey)
-
-        openpgp_key = openpgp._safe_call(_ascii_to_openpgp_cb, pubkey)
+            openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
 
         doc.content = {
+            "incoming": True,
             "_enc_scheme": EncryptionSchemes.PUBKEY,
             "_enc_json": openpgp.encrypt_asym(json.dumps(data),
                                               openpgp_key)
