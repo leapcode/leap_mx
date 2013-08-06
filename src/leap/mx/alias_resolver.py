@@ -29,6 +29,7 @@ try:
     # from twisted.mail      import alias
     from twisted.protocols import postfix
     from twisted.python import log
+    from twisted.internet import defer
 except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
@@ -47,21 +48,27 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
             log.msg("Result not found")
         return result
 
+    def spit_result(self, result):
+        if result is None:
+            return defer.succeed("500 NO RESULT")
+        else:
+            return defer.succeed("200")
+
     def get(self, key):
         try:
             log.msg("Processing key: %s" % (key,))
             if key.find("@") == -1:
                 log.msg("Ignoring key since it's not an email address")
                 return None
-
             key = key.split("@")[0]
             key = key.split("+")[0]
             log.msg("Final key to query: %s" % (key,))
             d = self._cdb.queryByLoginOrAlias(key)
             d.addCallback(self._to_str)
             d.addErrback(log.err)
-            return d
-        except:
-            log.err()
 
-        return None
+            d.addCallback(self.spit_result)
+            d.addErrback(log.err)
+            return d
+        except Exception as e:
+            log.err('exception in get: %r' % e)
