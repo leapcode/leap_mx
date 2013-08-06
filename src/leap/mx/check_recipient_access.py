@@ -26,11 +26,7 @@ from leap.mx.alias_resolver import AliasResolverFactory
 
 
 class CheckRecipientAccess(postfix.PostfixTCPMapServer):
-    def _cbGot(self, value):
-        if value is None:
-            self.sendCode(500)
-        else:
-            self.sendCode(200)
+    pass
 
 
 class CheckRecipientAccessFactory(AliasResolverFactory):
