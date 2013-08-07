@@ -18,6 +18,8 @@
 
 """
 Classes for resolving postfix recipient access
+
+Test this with postmap -v -q "foo" tcp:localhost:2244
 """
 
 from twisted.protocols import postfix
@@ -25,9 +27,14 @@ from twisted.protocols import postfix
 from leap.mx.alias_resolver import AliasResolverFactory
 
 
-class CheckRecipientAccess(postfix.PostfixTCPMapServer):
-    pass
+class LEAPPostFixTCPMapserverAccess(postfix.PostfixTCPMapServer):
+    def _cbGot(self, value):
+        if value is None:
+            self.sendCode(500, postfix.quote("NOT FOUND SORRY"))
+        else:
+            # We do not send the value in this case
+            self.sendCode(200)
 
 
 class CheckRecipientAccessFactory(AliasResolverFactory):
-    protocol = CheckRecipientAccess
+    protocol = LEAPPostFixTCPMapserverAccess
