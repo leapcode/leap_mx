@@ -123,7 +123,7 @@ class MailReceiver(Service):
             return uuid, doc
 
         openpgp_key = None
-        with openpgp.temporary_gpgwrapper() as gpg:
+        with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
             openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
@@ -131,8 +131,10 @@ class MailReceiver(Service):
         doc.content = {
             "incoming": True,
             "_enc_scheme": EncryptionSchemes.PUBKEY,
-            "_enc_json": openpgp.encrypt_asym(json.dumps(data),
-                                              openpgp_key)
+            "_enc_json": str(gpg.encrypt(
+                json.dumps(data),
+                openpgp_key.fingerprint,
+                symmetric=False))
         }
 
         return uuid, doc
