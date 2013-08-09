@@ -1,3 +1,0 @@
-  o Use the new API to import a new ascii armored public key. Fixes
-    #3352.
-  o Add "incoming" index for ease of listing new email.

@@ -1,0 +1,10 @@
+0.3.0 Aug 9:
+  o Give a return code for bare usernames too. Closes: #3405
+  o Adapt to Soledad 0.2.1 API.
+  o Fix broken pip install
+  o Fix alias lookup return codes. Closes: #3356
+  o Use the new API to import a new ascii armored public key. Fixes
+    #3352.
+  o Add "incoming" index for ease of listing new email.
+  o Add dependency for leap.keymanager.
+  o Adapt to the new keymanager API. Closes #3397.
