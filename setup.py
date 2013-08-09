@@ -48,7 +48,7 @@ else:
                   ("/etc/init.d/", ["pkg/leap_mx"])]
 setup(
     name='leap.mx',
-    version="0.2.2",
+    version="0.3.0",
     # bump also src/leap/mx/__init__
     url="http://github.com/leapcode/leap_mx",
     license='AGPLv3+',
