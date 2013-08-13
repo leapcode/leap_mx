@@ -28,18 +28,18 @@ case "$1" in
     start)
         echo -n "Starting leap_mx: twistd"
         HOME="/var/lib/leap_mx/" \
-          start-stop-daemon --start --quiet --exec $twistd_path -- \
-                          --pidfile=$pidfile \
-                          --rundir=$rundir \
-                          --python=$file \
-                          --logfile=$logfile
+          start-stop-daemon --start --quiet --exec $TWISTD_PATH -- \
+                          --pidfile=$PIDFILE \
+                          --rundir=$RUNDIR \
+                          --python=$FILE \
+                          --logfile=$LOGFILE
         echo "."
     ;;
 
     stop)
         echo -n "Stopping leap_mx: twistd"
         start-stop-daemon --stop --quiet  \
-            --pidfile $pidfile
+            --pidfile $PIDFILE
         echo "."
     ;;
 
