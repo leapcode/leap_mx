@@ -1,8 +1,14 @@
+leap-mx (0.3.0.1) unstable; urgency=low
+
+  * Require twisted >=13.0.0-1~bpo70
+
+ -- Micah Anderson <micah@debian.org>  Tue, 13 Aug 2013 16:10:21 -0400
+
 leap-mx (0.3.0) unstable; urgency=low
 
   * Update to 0.3.0
   * Source /lib/lsb/init-functions in initscripts
-  * Require twisted >= 13.0.0-1
+  * Require twisted >=13.0.0-1
 
  -- Micah Anderson <micah@debian.org>  Tue, 13 Aug 2013 15:49:33 -0400
 
