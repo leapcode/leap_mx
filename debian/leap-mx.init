@@ -18,6 +18,8 @@ TWISTD_PATH=/usr/bin/twistd
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
 
+. /lib/lsb/init-functions
+
 test -r $file || exit 0
 test -r /etc/leap/ || exit 0
 
