@@ -1,7 +1,9 @@
 leap-mx (0.3.0.3) unstable; urgency=low
-  
+
   * Pin twisted version in Depends to get 13 or greater
-  
+
+ -- Micah Anderson <micah@debian.org>  Sat, 17 Aug 2013 12:10:49 -0400
+
 leap-mx (0.3.0.2) unstable; urgency=low
 
   * Fix initscript variables
