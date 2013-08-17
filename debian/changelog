@@ -1,3 +1,7 @@
+leap-mx (0.3.0.3) unstable; urgency=low
+  
+  * Pin twisted version in Depends to get 13 or greater
+  
 leap-mx (0.3.0.2) unstable; urgency=low
 
   * Fix initscript variables
