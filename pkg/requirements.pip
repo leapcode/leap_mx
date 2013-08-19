@@ -2,13 +2,5 @@ Twisted>=12.0.2
 paisley>=0.3.1
 ## XXX change me to whatever you name the package in pypi
 python-gnupg>=0.3.0
-leap.soledad
-leap.soledad_server
+leap.soledad.common>=0.3.0
 leap.keymanager>=0.2.0
-
-###############
-# Development #
-###############
-
-#leap.soledad  # make this a dep as soon as it is installable from pypi !!
--e git://github.com/andrejb/soledad.git@develop#egg=leap.soledad

@@ -31,9 +31,13 @@ from twisted.application.service import Service
 from twisted.internet import inotify
 from twisted.python import filepath, log
 
-from leap.soledad.document import SoledadDocument
-from leap.soledad.target import EncryptionSchemes
-from leap.soledad_server.couch import CouchDatabase
+from leap.soledad.common.document import SoledadDocument
+from leap.soledad.common.crypto import (
+    EncryptionSchemes,
+    ENC_JSON_KEY,
+    ENC_SCHEME_KEY,
+)
+from leap.soledad.common.couch import CouchDatabase
 from leap.keymanager import openpgp
 
 
@@ -41,6 +45,8 @@ class MailReceiver(Service):
     """
     Service that monitors incoming email and processes it
     """
+
+    INCOMING_KEY = 'incoming'
 
     def __init__(self, mail_couch_url, users_cdb, directories):
         """
@@ -116,9 +122,9 @@ class MailReceiver(Service):
 
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
-                "incoming": True,
-                "_enc_scheme": EncryptionSchemes.NONE,
-                "_enc_json": json.dumps(data)
+                self.INCOMING_KEY: True,
+                ENC_SCHEME_KEY: EncryptionSchemes.NONE,
+                ENC_JSON_KEY: json.dumps(data)
             }
             return uuid, doc
 
@@ -129,9 +135,9 @@ class MailReceiver(Service):
             openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
 
         doc.content = {
-            "incoming": True,
-            "_enc_scheme": EncryptionSchemes.PUBKEY,
-            "_enc_json": str(gpg.encrypt(
+            self.INCOMING_KEY: True,
+            ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
+            ENC_JSON_KEY: str(gpg.encrypt(
                 json.dumps(data),
                 openpgp_key.fingerprint,
                 symmetric=False))
