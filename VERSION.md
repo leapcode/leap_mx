@@ -1,7 +1,7 @@
 
-[leap_mx, version 0.2.2]
+[leap_mx, version 0.3.0]
 ------------------------
-Authors: 	Isis Agora Lovecruft, <isis@leap.se> 0x2cdb8b35
+Authors: 	The LEAP Team
 Website: 	https://leap.se
-Github: 	https://github.com/isislovecruft/leap_mx/
+Github: 	https://github.com/leapcode/leap_mx/
 

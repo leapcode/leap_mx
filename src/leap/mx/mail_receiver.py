@@ -29,6 +29,7 @@ from email import message_from_string
 
 from twisted.application.service import Service
 from twisted.internet import inotify
+from twisted.internet.defer import DeferredList
 from twisted.python import filepath, log
 
 from leap.soledad.document import SoledadDocument
@@ -76,18 +77,20 @@ class MailReceiver(Service):
                      callbacks=[self._process_incoming_email],
                      recursive=recursive)
 
-    def _get_pubkey(self, uuid):
-        """
-        Given a UUID for a user, retrieve its public key
+    def _gather_uuid_pubkey(self, results):
+        if len(results) < 2:
+            return None, None
 
-        @param uuid: UUID for a user
-        @type uuid: str
+        # DeferredList results are structured like this:
+        # [ (succeeded, pubkey), (succeeded, uuid) ]
+        # succeeded is a bool value that specifies if the
+        # corresponding callback succeeded
+        pubkey_res, uuid_res = results
 
-        @return: uuid, public key
-        @rtype: tuple of (str, str)
-        """
-        log.msg("Fetching pubkey for %s" % (uuid,))
-        return uuid, self._users_cdb.getPubKey(uuid)
+        pubkey = pubkey_res[1] if pubkey_res[0] else None
+        uuid = uuid_res[1] if uuid_res[0] else None
+
+        return uuid, pubkey
 
     def _encrypt_message(self, uuid_pubkey, address, message):
         """
@@ -123,17 +126,19 @@ class MailReceiver(Service):
             return uuid, doc
 
         openpgp_key = None
-        with openpgp.temporary_gpgwrapper() as gpg:
+        with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
             openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
 
-        doc.content = {
-            "incoming": True,
-            "_enc_scheme": EncryptionSchemes.PUBKEY,
-            "_enc_json": openpgp.encrypt_asym(json.dumps(data),
-                                              openpgp_key)
-        }
+            doc.content = {
+                "incoming": True,
+                "_enc_scheme": EncryptionSchemes.PUBKEY,
+                "_enc_json": str(gpg.encrypt(
+                    json.dumps(data),
+                    openpgp_key.fingerprint,
+                    symmetric=False))
+            }
 
         return uuid, doc
 
@@ -157,7 +162,6 @@ class MailReceiver(Service):
             uuid = 0
 
         db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
-        db.put_doc(doc)
 
         log.msg("Done exporting")
 
@@ -206,17 +210,16 @@ class MailReceiver(Service):
                 if owner is None:
                     log.err("Malformed mail, neither To: nor "
                             "Delivered-To: field")
-                owner = owner.split("@")[0]
-                owner = owner.split("+")[0]
                 log.msg("Mail owner: %s" % (owner,))
 
                 log.msg("%s received a new mail" % (owner,))
-                d = self._users_cdb.queryByLoginOrAlias(owner)
-                d.addCallbacks(self._get_pubkey, log.err)
+                dpubk = self._users_cdb.getPubKey(owner)
+                duuid = self._users_cdb.queryByAddress(owner)
+                d = DeferredList([dpubk, duuid])
+                d.addCallbacks(self._gather_uuid_pubkey, log.err)
                 d.addCallbacks(self._encrypt_message, log.err,
                                (owner, mail_data))
                 d.addCallbacks(self._export_message, log.err)
                 d.addCallbacks(self._conditional_remove, log.err,
                                (filepath,))
                 d.addErrback(log.err)
-
