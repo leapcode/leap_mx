@@ -97,7 +97,7 @@ class ConnectedCouchDB(client.CouchDB):
         """
         pass
 
-    def queryByLoginOrAlias(self, alias):
+    def queryByAddress(self, address):
         """
         Check to see if a particular email or alias exists.
 
@@ -106,47 +106,56 @@ class ConnectedCouchDB(client.CouchDB):
         @return: a deferred for this query
         @rtype twisted.defer.Deferred
         """
-        assert isinstance(alias, str), "Email or alias queries must be string"
+        assert isinstance(address, (str, unicode)), "Email or alias queries must be string"
 
         # TODO: Cache results
 
-        d = self.openView(docId="User",
-                          viewId="by_login_or_alias/",
-                          key=alias,
+        d = self.openView(docId="Identity",
+                          viewId="by_address/",
+                          key=address,
                           reduce=False,
                           include_docs=True)
 
-        d.addCallbacks(partial(self._get_uuid, alias), log.err)
+        d.addCallbacks(partial(self._get_uuid, address), log.err)
 
         return d
 
-    def _get_uuid(self, alias, result):
+    def _get_uuid(self, address, result):
         """
-        Parses the result of the by_login_or_alias query and gets the
-        uuid
+        Parses the result of the by_address query and gets the uuid
 
-        @param alias: alias looked up
-        @type alias: string
+        @param address: alias looked up
+        @type address: string
         @param result: result dictionary
         @type result: dict
         @return: The uuid for alias if available
         @rtype: str
         """
         for row in result["rows"]:
-            if row["key"] == alias:
-                uuid = row["id"]
-                self._cache[uuid] = row["doc"].get("public_key", None)
+            if row["key"] == address:
+                uuid = row["doc"].get("user_id", None)
+                if uuid is None:
+                    log.msg("ERROR: Found doc for %s but there's not user_id!"
+                            % (address,))
                 return uuid
         return None
 
-    def getPubKey(self, uuid):
-        pubkey = None
-        try:
-            pubkey = self._cache[uuid]
-        except:
-            pass
-        return pubkey
+    def getPubKey(self, address):
+        d = self.openView(docId="Identity",
+                          viewId="pgp_key_by_email/",
+                          key=address,
+                          reduce=False,
+                          include_docs=True)
 
+        d.addCallbacks(partial(self._get_pgp_key, address), log.err)
+
+        return d
+
+    def _get_pgp_key(self, address, result):
+        for row in result["rows"]:
+            if row["key"] == address:
+                return row["value"]
+        return None
 
 if __name__ == "__main__":
     from twisted.internet import reactor

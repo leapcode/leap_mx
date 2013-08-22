@@ -51,7 +51,7 @@ check_recipient_port = config.getint("check recipient", "port")
 
 cdb = couchdbhelper.ConnectedCouchDB(server,
                                      port=port,
-                                     dbName="users",
+                                     dbName="identities",
                                      username=user,
                                      password=password)
 

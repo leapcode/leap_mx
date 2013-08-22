@@ -80,16 +80,8 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
         At some point we will have to consider the domain part too.
         """
         try:
-            log.msg("Processing key: %s" % (key,))
-            if key.find("@") == -1:
-                # No proper email address, but we need to continue processing
-                # the query so postmap is happy.
-                log.msg("Key it's not an email address")
-            else:
-                key = key.split("@")[0]
-                key = key.split("+")[0]
-            log.msg("Final key to query: %s" % (key,))
-            d = self._cdb.queryByLoginOrAlias(key)
+            log.msg("Query key: %s" % (key,))
+            d = self._cdb.queryByAddress(key)
 
             d.addCallback(self._to_str)
             d.addCallback(self.spit_result)

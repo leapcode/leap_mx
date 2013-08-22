@@ -29,11 +29,16 @@ from email import message_from_string
 
 from twisted.application.service import Service
 from twisted.internet import inotify
+from twisted.internet.defer import DeferredList
 from twisted.python import filepath, log
 
-from leap.soledad.document import SoledadDocument
-from leap.soledad.target import EncryptionSchemes
-from leap.soledad_server.couch import CouchDatabase
+from leap.soledad.common.document import SoledadDocument
+from leap.soledad.common.crypto import (
+    EncryptionSchemes,
+    ENC_JSON_KEY,
+    ENC_SCHEME_KEY,
+)
+from leap.soledad.common.couch import CouchDatabase
 from leap.keymanager import openpgp
 
 
@@ -41,6 +46,8 @@ class MailReceiver(Service):
     """
     Service that monitors incoming email and processes it
     """
+
+    INCOMING_KEY = 'incoming'
 
     def __init__(self, mail_couch_url, users_cdb, directories):
         """
@@ -76,18 +83,20 @@ class MailReceiver(Service):
                      callbacks=[self._process_incoming_email],
                      recursive=recursive)
 
-    def _get_pubkey(self, uuid):
-        """
-        Given a UUID for a user, retrieve its public key
+    def _gather_uuid_pubkey(self, results):
+        if len(results) < 2:
+            return None, None
 
-        @param uuid: UUID for a user
-        @type uuid: str
+        # DeferredList results are structured like this:
+        # [ (succeeded, pubkey), (succeeded, uuid) ]
+        # succeeded is a bool value that specifies if the
+        # corresponding callback succeeded
+        pubkey_res, uuid_res = results
 
-        @return: uuid, public key
-        @rtype: tuple of (str, str)
-        """
-        log.msg("Fetching pubkey for %s" % (uuid,))
-        return uuid, self._users_cdb.getPubKey(uuid)
+        pubkey = pubkey_res[1] if pubkey_res[0] else None
+        uuid = uuid_res[1] if uuid_res[0] else None
+
+        return uuid, pubkey
 
     def _encrypt_message(self, uuid_pubkey, address, message):
         """
@@ -116,9 +125,9 @@ class MailReceiver(Service):
 
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
-                "incoming": True,
-                "_enc_scheme": EncryptionSchemes.NONE,
-                "_enc_json": json.dumps(data)
+                self.INCOMING_KEY: True,
+                ENC_SCHEME_KEY: EncryptionSchemes.NONE,
+                ENC_JSON_KEY: json.dumps(data)
             }
             return uuid, doc
 
@@ -128,14 +137,14 @@ class MailReceiver(Service):
             key = gpg.list_keys().pop()
             openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
 
-        doc.content = {
-            "incoming": True,
-            "_enc_scheme": EncryptionSchemes.PUBKEY,
-            "_enc_json": str(gpg.encrypt(
-                json.dumps(data),
-                openpgp_key.fingerprint,
-                symmetric=False))
-        }
+            doc.content = {
+                self.INCOMING_KEY: True,
+                ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
+                ENC_JSON_KEY: str(gpg.encrypt(
+                    json.dumps(data),
+                    openpgp_key.fingerprint,
+                    symmetric=False))
+            }
 
         return uuid, doc
 
@@ -159,7 +168,6 @@ class MailReceiver(Service):
             uuid = 0
 
         db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
-        db.put_doc(doc)
 
         log.msg("Done exporting")
 
@@ -208,17 +216,16 @@ class MailReceiver(Service):
                 if owner is None:
                     log.err("Malformed mail, neither To: nor "
                             "Delivered-To: field")
-                owner = owner.split("@")[0]
-                owner = owner.split("+")[0]
                 log.msg("Mail owner: %s" % (owner,))
 
                 log.msg("%s received a new mail" % (owner,))
-                d = self._users_cdb.queryByLoginOrAlias(owner)
-                d.addCallbacks(self._get_pubkey, log.err)
+                dpubk = self._users_cdb.getPubKey(owner)
+                duuid = self._users_cdb.queryByAddress(owner)
+                d = DeferredList([dpubk, duuid])
+                d.addCallbacks(self._gather_uuid_pubkey, log.err)
                 d.addCallbacks(self._encrypt_message, log.err,
                                (owner, mail_data))
                 d.addCallbacks(self._export_message, log.err)
                 d.addCallbacks(self._conditional_remove, log.err,
                                (filepath,))
                 d.addErrback(log.err)
-
