@@ -20,6 +20,12 @@ setup file for leap.mx
 import os
 from setuptools import setup, find_packages
 
+import versioneer
+versioneer.versionfile_source = 'src/leap/mx/_version.py'
+versioneer.versionfile_build = 'leap/mx/_version.py'
+versioneer.tag_prefix = ''  # tags are like 1.2.0
+versioneer.parentdir_prefix = 'leap.mx-'
+
 from pkg.utils.reqs import parse_requirements
 
 trove_classifiers = [
@@ -48,8 +54,8 @@ else:
                   ("/etc/init.d/", ["pkg/leap_mx"])]
 setup(
     name='leap.mx',
-    version="0.3.0",
-    # bump also src/leap/mx/__init__
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     url="http://github.com/leapcode/leap_mx",
     license='AGPLv3+',
     author='The LEAP Encryption Access Project',
