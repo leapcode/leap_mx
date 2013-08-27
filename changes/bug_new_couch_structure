@@ -1,2 +1,0 @@
-  o Migrate mx functions to work on the new couchdb structure and
-    views. Fixes #3502.
