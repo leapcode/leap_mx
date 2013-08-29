@@ -51,3 +51,11 @@ nosetests.xml
 *.log
 *.conf
 *.config
+
+# ignore debian stuff
+debian/files
+debian/leap-mx.postinst.debhelper
+debian/leap-mx.postrm.debhelper
+debian/leap-mx.prerm.debhelper
+debian/leap-mx.substvars
+debian/leap-mx/
