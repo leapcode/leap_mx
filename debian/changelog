@@ -1,8 +1,14 @@
+leap-mx (0.3.1.2) unstable; urgency=low
+
+  * Update with python-couchdb dependency
+
+ -- Micah Anderson <micah@debian.org>  thu, 22 aug 2013 15:27:02 -0400
+
 leap-mx (0.3.1.1) unstable; urgency=low
 
-  * Merge develop to prepare for new version
+  * merge develop to prepare for new version
 
- -- Micah Anderson <micah@debian.org>  Thu, 22 Aug 2013 15:27:02 -0400
+ -- Micah Anderson <micah@debian.org>  thu, 22 aug 2013 15:27:02 -0400
 
 leap-mx (0.3.0.3) unstable; urgency=low
 
