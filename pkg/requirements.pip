@@ -1,5 +1,13 @@
 Twisted>=12.0.2
+
 paisley>=0.3.1
+
+# python-couchdb is used by leap.soledad.common,
+# maybe we should get it as optional/recommends
+# in soledad-common, but we need to declare here
+# for the time being.
+couchdb
+
 ## XXX change me to whatever you name the package in pypi
 python-gnupg>=0.3.0
 leap.soledad.common>=0.3.0
