@@ -1,3 +1,4 @@
+couchdb python-couchdb
 leap.soledad.common soledad-common
 leap.soledad_server soledad-server
 leap.keymanager leap-keymanager
