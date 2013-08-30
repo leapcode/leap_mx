@@ -1,3 +1,11 @@
+leap-mx (0.3.1.5) unstable; urgency=low
+
+  * Cherry pick fix from 
+    https://github.com/chiiph/leap_mx/commit/78f6ca775dc42eba69f2dc1e134ca360c0813aff
+    to keep file watcher in memory to prevent losing file events
+
+ -- Micah Anderson <micah@debian.org>  Fri, 30 Aug 2013 12:40:15 -0400
+
 leap-mx (0.3.1.4) unstable; urgency=low
 
   * add debian/dirs to make sure that /var/lib/leap_mx is created (#3622)
