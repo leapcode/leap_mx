@@ -168,6 +168,7 @@ class MailReceiver(Service):
             uuid = 0
 
         db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
+        db.put_doc(doc)
 
         log.msg("Done exporting")
 
