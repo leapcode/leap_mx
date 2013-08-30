@@ -72,16 +72,16 @@ class MailReceiver(Service):
         Starts the MailReceiver service
         """
         Service.startService(self)
-        wm = inotify.INotify()
-        wm.startReading()
+        self.wm = inotify.INotify()
+        self.wm.startReading()
 
         mask = inotify.IN_CREATE
 
         for directory, recursive in self._directories:
             log.msg("Watching %s --- Recursive: %s" % (directory, recursive))
-            wm.watch(filepath.FilePath(directory), mask,
-                     callbacks=[self._process_incoming_email],
-                     recursive=recursive)
+            self.wm.watch(filepath.FilePath(directory), mask,
+                          callbacks=[self._process_incoming_email],
+                          recursive=recursive)
 
     def _gather_uuid_pubkey(self, results):
         if len(results) < 2:
