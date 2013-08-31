@@ -1,0 +1,2 @@
+  o Properly parse mail address of the form "Name
+    <user@domain>". Fixes #3653.

@@ -24,6 +24,7 @@ import os
 import uuid as pyuuid
 
 import json
+import email.utils
 
 from email import message_from_string
 
@@ -218,6 +219,7 @@ class MailReceiver(Service):
                             "Delivered-To: field")
                 log.msg("Mail owner: %s" % (owner,))
 
+                owner = email.utils.parseaddr(owner)[1]
                 log.msg("%s received a new mail" % (owner,))
                 dpubk = self._users_cdb.getPubKey(owner)
                 duuid = self._users_cdb.queryByAddress(owner)
