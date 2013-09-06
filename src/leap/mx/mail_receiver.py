@@ -24,6 +24,7 @@ import os
 import uuid as pyuuid
 
 import json
+import email.utils
 
 from email import message_from_string
 
@@ -72,16 +73,16 @@ class MailReceiver(Service):
         Starts the MailReceiver service
         """
         Service.startService(self)
-        wm = inotify.INotify()
-        wm.startReading()
+        self.wm = inotify.INotify()
+        self.wm.startReading()
 
         mask = inotify.IN_CREATE
 
         for directory, recursive in self._directories:
             log.msg("Watching %s --- Recursive: %s" % (directory, recursive))
-            wm.watch(filepath.FilePath(directory), mask,
-                     callbacks=[self._process_incoming_email],
-                     recursive=recursive)
+            self.wm.watch(filepath.FilePath(directory), mask,
+                          callbacks=[self._process_incoming_email],
+                          recursive=recursive)
 
     def _gather_uuid_pubkey(self, results):
         if len(results) < 2:
@@ -168,6 +169,7 @@ class MailReceiver(Service):
             uuid = 0
 
         db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
+        db.put_doc(doc)
 
         log.msg("Done exporting")
 
@@ -218,6 +220,7 @@ class MailReceiver(Service):
                             "Delivered-To: field")
                 log.msg("Mail owner: %s" % (owner,))
 
+                owner = email.utils.parseaddr(owner)[1]
                 log.msg("%s received a new mail" % (owner,))
                 dpubk = self._users_cdb.getPubKey(owner)
                 duuid = self._users_cdb.queryByAddress(owner)
