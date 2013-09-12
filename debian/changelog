@@ -1,3 +1,9 @@
+leap-mx (0.3.2) unstable; urgency=low
+
+  * Update to 0.3.2 release
+
+ -- Micah Anderson <micah@debian.org>  Thu, 12 Sep 2013 14:24:05 +0200
+
 leap-mx (0.3.1.5) unstable; urgency=low
 
   * Cherry pick fix from 
