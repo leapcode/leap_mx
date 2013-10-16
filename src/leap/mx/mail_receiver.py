@@ -15,11 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 MailReceiver service definition
 """
-
 import os
 import uuid as pyuuid
 
@@ -54,14 +52,14 @@ class MailReceiver(Service):
         """
         Constructor
 
-        @param mail_couch_url: URL prefix for the couchdb where mail
+        :param mail_couch_url: URL prefix for the couchdb where mail
         should be stored
-        @type mail_couch_url: str
-        @param users_cdb: CouchDB instance from where to get the uuid
+        :type mail_couch_url: str
+        :param users_cdb: CouchDB instance from where to get the uuid
         and pubkey for a user
-        @type users_cdb: ConnectedCouchDB
-        @param directories: list of directories to monitor
-        @type directories: list of tuples (path: str, recursive: bool)
+        :type users_cdb: ConnectedCouchDB
+        :param directories: list of directories to monitor
+        :type directories: list of tuples (path: str, recursive: bool)
         """
         # Service doesn't define an __init__
         self._mail_couch_url = mail_couch_url
@@ -105,16 +103,17 @@ class MailReceiver(Service):
         the message to that public key.
         The address is needed in order to build the OpenPGPKey object.
 
-        @param uuid_pubkey: tuple that holds the uuid and the public
-        key as it is returned by the previous call in the chain
-        @type uuid_pubkey: tuple (str, str)
-        @param address: mail address for this message
-        @type address: str
-        @param message: message contents
-        @type message: str
+        :param uuid_pubkey: tuple that holds the uuid and the public
+                            key as it is returned by the previous call in the
+                            chain
+        :type uuid_pubkey: tuple (str, str)
+        :param address: mail address for this message
+        :type address: str
+        :param message: message contents
+        :type message: str
 
-        @return: uuid, doc to sync with Soledad
-        @rtype: tuple(str, SoledadDocument)
+        :return: uuid, doc to sync with Soledad
+        :rtype: tuple(str, SoledadDocument)
         """
         uuid, pubkey = uuid_pubkey
         log.msg("Encrypting message to %s's pubkey" % (uuid,))
@@ -153,14 +152,14 @@ class MailReceiver(Service):
         """
         Given a UUID and a SoledadDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
-        accessible to the recipient of the mail
+        accessible to the recipient of the mail.
 
-        @param uuid_doc: tuple that holds the UUID and SoledadDocument
-        @type uuid_doc: tuple(str, SoledadDocument)
+        :param uuid_doc: tuple that holds the UUID and SoledadDocument
+        :type uuid_doc: tuple(str, SoledadDocument)
 
-        @return: True if it's ok to remove the message, False
-        otherwise
-        @rtype: bool
+        :return: True if it's ok to remove the message, False
+                 otherwise
+        :rtype: bool
         """
         uuid, doc = uuid_doc
         log.msg("Exporting message for %s" % (uuid,))
@@ -177,13 +176,13 @@ class MailReceiver(Service):
 
     def _conditional_remove(self, do_remove, filepath):
         """
-        Removes the message if do_remove is True
+        Removes the message if do_remove is True.
 
-        @param do_remove: True if the message should be removed, False
-        otherwise
-        @type do_remove: bool
-        @param filepath: path to the mail
-        @type filepath: twisted.python.filepath.FilePath
+        :param do_remove: True if the message should be removed, False
+                          otherwise
+        :type do_remove: bool
+        :param filepath: path to the mail
+        :type filepath: twisted.python.filepath.FilePath
         """
         if do_remove:
             # remove the original mail
@@ -196,18 +195,18 @@ class MailReceiver(Service):
 
     def _process_incoming_email(self, otherself, filepath, mask):
         """
-        Callback that processes incoming email
+        Callback that processes incoming email.
 
-        @param otherself: Watch object for the current callback from
-        inotify
-        @type otherself: twisted.internet.inotify._Watch
-        @param filepath: Path of the file that changed
-        @type filepath: twisted.python.filepath.FilePath
-        @param mask: identifier for the type of change that triggered
-        this callback
-        @type mask: int
+        :param otherself: Watch object for the current callback from
+                          inotify.
+        :type otherself: twisted.internet.inotify._Watch
+        :param filepath: Path of the file that changed
+        :type filepath: twisted.python.filepath.FilePath
+        :param mask: identifier for the type of change that triggered
+                     this callback
+        :type mask: int
         """
-        if os.path.split(filepath.dirname())[-1]  == "new":
+        if os.path.split(filepath.dirname())[-1] == "new":
             log.msg("Processing new mail at %s" % (filepath.path,))
             with filepath.open("r") as f:
                 mail_data = f.read()

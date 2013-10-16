@@ -49,16 +49,16 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Connect to a CouchDB instance.
 
-        @param host: A hostname string for the CouchDB server.
-        @type host: str
-        @param port: The port of the CouchDB server.
-        @type port: int
-        @param dbName: (optional) The default database to bind queries to.
-        @type dbName: str
-        @param username: (optional) The username for authorization.
-        @type username: str
-        @param str password: (optional) The password for authorization.
-        @type password: str
+        :param host: A hostname string for the CouchDB server.
+        :type host: str
+        :param port: The port of the CouchDB server.
+        :type port: int
+        :param dbName: (optional) The default database to bind queries to.
+        :type dbName: str
+        :param username: (optional) The username for authorization.
+        :type username: str
+        :param str password: (optional) The password for authorization.
+        :type password: str
         """
         client.CouchDB.__init__(self,
                                 host,
@@ -78,8 +78,8 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Callback for listDB that prints the available databases
 
-        @param data: response from the listDB command
-        @type data: array
+        :param data: response from the listDB command
+        :type data: array
         """
         log.msg("Available databases:")
         for database in data:
@@ -101,10 +101,10 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Check to see if a particular email or alias exists.
 
-        @param alias: A string representing the email or alias to check.
-        @type alias: str
-        @return: a deferred for this query
-        @rtype twisted.defer.Deferred
+        :param alias: A string representing the email or alias to check.
+        :type alias: str
+        :return: a deferred for this query
+        :rtype twisted.defer.Deferred
         """
         assert isinstance(address, (str, unicode)), "Email or alias queries must be string"
 
@@ -124,12 +124,12 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Parses the result of the by_address query and gets the uuid
 
-        @param address: alias looked up
-        @type address: string
-        @param result: result dictionary
-        @type result: dict
-        @return: The uuid for alias if available
-        @rtype: str
+        :param address: alias looked up
+        :type address: string
+        :param result: result dictionary
+        :type result: dict
+        :return: The uuid for alias if available
+        :rtype: str
         """
         for row in result["rows"]:
             if row["key"] == address:
