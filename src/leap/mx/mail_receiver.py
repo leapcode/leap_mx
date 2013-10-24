@@ -15,14 +15,22 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 MailReceiver service definition
 """
+
 import os
 import uuid as pyuuid
 
 import json
 import email.utils
+import socket
+
+try:
+    import cchardet as chardet
+except ImportError:
+    import chardet
 
 from email import message_from_string
 
@@ -121,13 +129,17 @@ class MailReceiver(Service):
 
         doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
+        result = chardet.detect(message)
+
+        encoding = result["encoding"]
+
         data = {'incoming': True, 'content': message}
 
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
-                ENC_JSON_KEY: json.dumps(data)
+                ENC_JSON_KEY: json.dumps(data, encoding=encoding)
             }
             return uuid, doc
 
@@ -141,7 +153,7 @@ class MailReceiver(Service):
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
-                    json.dumps(data),
+                    json.dumps(data, encoding=encoding),
                     openpgp_key.fingerprint,
                     symmetric=False))
             }
