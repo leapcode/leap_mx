@@ -29,7 +29,6 @@ except ImportError:
     print "for instructions on getting required dependencies."
 
 try:
-    from twisted.internet import defer
     from twisted.python import log
 except ImportError:
     print "This software requires Twisted. Please see the README file"
@@ -140,20 +139,39 @@ class ConnectedCouchDB(client.CouchDB):
                 return uuid
         return None
 
-    def getPubKey(self, address):
+    def getPubKey(self, uuid):
+        """
+        Returns a deferred that will return the pubkey for the uuid provided
+
+        :param uuid: uuid for the user to query
+        :type uuid: str
+
+        :rtype: Deferred
+        """
         d = self.openView(docId="Identity",
                           viewId="pgp_key_by_email/",
-                          key=address,
+                          user_id=uuid,
                           reduce=False,
                           include_docs=True)
 
-        d.addCallbacks(partial(self._get_pgp_key, address), log.err)
+        d.addCallbacks(partial(self._get_pgp_key, uuid), log.err)
 
         return d
 
-    def _get_pgp_key(self, address, result):
+    def _get_pgp_key(self, uuid, result):
+        """
+        Callback used to filter the correct pubkey from the result of
+        the query to the couchdb
+
+        :param uuid: uuid for the user that was queried
+        :type uuid: str
+        :param result: result dictionary for the db query
+        :type result: dict
+
+        :rtype: str or None
+        """
         for row in result["rows"]:
-            if row["key"] == address:
+            if row["doc"]["user_id"] == uuid:
                 return row["value"]
         return None
 
