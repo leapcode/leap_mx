@@ -15,20 +15,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 MailReceiver service definition
 """
+
 import os
 import uuid as pyuuid
 
 import json
 import email.utils
+import socket
+
+try:
+    import cchardet as chardet
+except ImportError:
+    import chardet
 
 from email import message_from_string
 
 from twisted.application.service import Service
 from twisted.internet import inotify
-from twisted.internet.defer import DeferredList
 from twisted.python import filepath, log
 
 from leap.soledad.common.document import SoledadDocument
@@ -65,6 +72,7 @@ class MailReceiver(Service):
         self._mail_couch_url = mail_couch_url
         self._users_cdb = users_cdb
         self._directories = directories
+        self._domain = socket.gethostbyaddr(socket.gethostname())[0]
 
     def startService(self):
         """
@@ -82,22 +90,7 @@ class MailReceiver(Service):
                           callbacks=[self._process_incoming_email],
                           recursive=recursive)
 
-    def _gather_uuid_pubkey(self, results):
-        if len(results) < 2:
-            return None, None
-
-        # DeferredList results are structured like this:
-        # [ (succeeded, pubkey), (succeeded, uuid) ]
-        # succeeded is a bool value that specifies if the
-        # corresponding callback succeeded
-        pubkey_res, uuid_res = results
-
-        pubkey = pubkey_res[1] if pubkey_res[0] else None
-        uuid = uuid_res[1] if uuid_res[0] else None
-
-        return uuid, pubkey
-
-    def _encrypt_message(self, uuid_pubkey, address, message):
+    def _encrypt_message(self, pubkey, uuid, address, message):
         """
         Given a UUID, a public key, address and a message, it encrypts
         the message to that public key.
@@ -112,14 +105,21 @@ class MailReceiver(Service):
         :param message: message contents
         :type message: str
 
-        :return: uuid, doc to sync with Soledad
+        :return: uuid, doc to sync with Soledad or None, None if
+                 something went wrong.
         :rtype: tuple(str, SoledadDocument)
         """
-        uuid, pubkey = uuid_pubkey
+        if uuid is None or pubkey is None or len(pubkey) == 0:
+            return None, None
+
         log.msg("Encrypting message to %s's pubkey" % (uuid,))
         log.msg("Pubkey: %s" % (pubkey,))
 
         doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
+
+        result = chardet.detect(message)
+
+        encoding = result["encoding"]
 
         data = {'incoming': True, 'content': message}
 
@@ -127,7 +127,7 @@ class MailReceiver(Service):
             doc.content = {
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
-                ENC_JSON_KEY: json.dumps(data)
+                ENC_JSON_KEY: json.dumps(data, encoding=encoding)
             }
             return uuid, doc
 
@@ -141,7 +141,7 @@ class MailReceiver(Service):
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
-                    json.dumps(data),
+                    json.dumps(data, encoding=encoding),
                     openpgp_key.fingerprint,
                     symmetric=False))
             }
@@ -162,6 +162,9 @@ class MailReceiver(Service):
         :rtype: bool
         """
         uuid, doc = uuid_doc
+        if uuid is None or doc is None:
+            return False
+
         log.msg("Exporting message for %s" % (uuid,))
 
         if uuid is None:
@@ -190,8 +193,40 @@ class MailReceiver(Service):
                 log.msg("Removing %s" % (filepath.path,))
                 filepath.remove()
                 log.msg("Done removing")
-            except:
+            except Exception:
                 log.err()
+
+    def _get_owner(self, mail):
+        """
+        Given an email, returns the owner (who's delivered to) and the
+        uuid of the owner. In case of a mailing list mail, the owner
+        will end up being the mailing list address, but the owner's
+        uuid will be correct as long as the user exists in the system.
+
+        :param mail: mail to analyze
+        :type mail: email.message.Message
+
+        :returns: a tuple of (owner, uuid)
+        :rtype: tuple(str or None, str or None)
+        """
+        owner = mail["To"]
+        uuid = None
+
+        delivereds = mail.get_all("Delivered-To")
+        for to in delivereds:
+            name, addr = email.utils.parseaddr(to)
+            parts = addr.split("@")
+            if len(parts) > 1 and parts[1] == self._domain:
+                uuid = parts[0]
+                break
+
+        if owner is None:  # default to Delivered-To
+            owner = mail["Delivered-To"]
+        if owner is None:
+            log.err("Malformed mail, neither To: nor "
+                    "Delivered-To: field")
+
+        return owner, uuid
 
     def _process_incoming_email(self, otherself, filepath, mask):
         """
@@ -206,28 +241,30 @@ class MailReceiver(Service):
                      this callback
         :type mask: int
         """
-        if os.path.split(filepath.dirname())[-1] == "new":
-            log.msg("Processing new mail at %s" % (filepath.path,))
-            with filepath.open("r") as f:
-                mail_data = f.read()
-                mail = message_from_string(mail_data)
-                owner = mail["To"]
-                if owner is None:  # default to Delivered-To
-                    owner = mail["Delivered-To"]
-                if owner is None:
-                    log.err("Malformed mail, neither To: nor "
-                            "Delivered-To: field")
-                log.msg("Mail owner: %s" % (owner,))
+        try:
+            if os.path.split(filepath.dirname())[-1]  == "new":
+                log.msg("Processing new mail at %s" % (filepath.path,))
+                with filepath.open("r") as f:
+                    mail_data = f.read()
+                    mail = message_from_string(mail_data)
+                    owner, uuid = self._get_owner(mail)
+                    if owner is None:
+                        # This shouldn't happen, may be a bug in
+                        # postfix? But we don't want to drop mail just
+                        # because of a bug. Skipping this one...
+                        return
+                    log.msg("Mail owner: %s %s" % (owner, uuid))
 
-                owner = email.utils.parseaddr(owner)[1]
-                log.msg("%s received a new mail" % (owner,))
-                dpubk = self._users_cdb.getPubKey(owner)
-                duuid = self._users_cdb.queryByAddress(owner)
-                d = DeferredList([dpubk, duuid])
-                d.addCallbacks(self._gather_uuid_pubkey, log.err)
-                d.addCallbacks(self._encrypt_message, log.err,
-                               (owner, mail_data))
-                d.addCallbacks(self._export_message, log.err)
-                d.addCallbacks(self._conditional_remove, log.err,
-                               (filepath,))
-                d.addErrback(log.err)
+                    if uuid is None:
+                        log.msg("BUG: There was no uuid!")
+                        return
+
+                    d = self._users_cdb.getPubKey(uuid)
+                    d.addCallbacks(self._encrypt_message, log.err,
+                                   (uuid, owner, mail_data))
+                    d.addCallbacks(self._export_message, log.err)
+                    d.addCallbacks(self._conditional_remove, log.err,
+                                   (filepath,))
+                    d.addErrback(log.err)
+        except Exception:
+            log.err()
