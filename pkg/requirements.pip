@@ -8,7 +8,5 @@ paisley>=0.3.1
 # for the time being.
 couchdb
 
-## XXX change me to whatever you name the package in pypi
-python-gnupg>=0.3.0
 leap.soledad.common>=0.3.0
-leap.keymanager>=0.2.0
+leap.keymanager>=0.3.4
