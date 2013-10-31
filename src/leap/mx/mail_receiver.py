@@ -38,6 +38,7 @@ from twisted.application.service import Service
 from twisted.internet import inotify
 from twisted.python import filepath, log
 
+from leap.common.mail import get_email_charset
 from leap.soledad.common.document import SoledadDocument
 from leap.soledad.common.crypto import (
     EncryptionSchemes,
@@ -90,18 +91,16 @@ class MailReceiver(Service):
                           callbacks=[self._process_incoming_email],
                           recursive=recursive)
 
-    def _encrypt_message(self, pubkey, uuid, address, message):
+    def _encrypt_message(self, pubkey, uuid, message):
         """
-        Given a UUID, a public key, address and a message, it encrypts
-        the message to that public key.
+        Given a UUID, a public key and a message, it encrypts the
+        message to that public key.
         The address is needed in order to build the OpenPGPKey object.
 
         :param uuid_pubkey: tuple that holds the uuid and the public
                             key as it is returned by the previous call in the
                             chain
         :type uuid_pubkey: tuple (str, str)
-        :param address: mail address for this message
-        :type address: str
         :param message: message contents
         :type message: str
 
@@ -117,9 +116,10 @@ class MailReceiver(Service):
 
         doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
-        result = chardet.detect(message)
-
-        encoding = result["encoding"]
+        encoding = get_email_charset(message, default=None)
+        if encoding is None:
+            result = chardet.detect(message)
+            encoding = result["encoding"]
 
         data = {'incoming': True, 'content': message}
 
@@ -135,7 +135,9 @@ class MailReceiver(Service):
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
-            openpgp_key = openpgp._build_key_from_gpg(address, key, pubkey)
+            # We don't care about the actual address, so we use a
+            # dummy one, we just care about the import of the pubkey
+            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com", key, pubkey)
 
             doc.content = {
                 self.INCOMING_KEY: True,
@@ -198,18 +200,14 @@ class MailReceiver(Service):
 
     def _get_owner(self, mail):
         """
-        Given an email, returns the owner (who's delivered to) and the
-        uuid of the owner. In case of a mailing list mail, the owner
-        will end up being the mailing list address, but the owner's
-        uuid will be correct as long as the user exists in the system.
+        Given an email, returns the uuid of the owner.
 
         :param mail: mail to analyze
         :type mail: email.message.Message
 
-        :returns: a tuple of (owner, uuid)
-        :rtype: tuple(str or None, str or None)
+        :returns: uuid
+        :rtype: str or None
         """
-        owner = mail["To"]
         uuid = None
 
         delivereds = mail.get_all("Delivered-To")
@@ -220,13 +218,7 @@ class MailReceiver(Service):
                 uuid = parts[0]
                 break
 
-        if owner is None:  # default to Delivered-To
-            owner = mail["Delivered-To"]
-        if owner is None:
-            log.err("Malformed mail, neither To: nor "
-                    "Delivered-To: field")
-
-        return owner, uuid
+        return uuid
 
     def _process_incoming_email(self, otherself, filepath, mask):
         """
@@ -247,13 +239,12 @@ class MailReceiver(Service):
                 with filepath.open("r") as f:
                     mail_data = f.read()
                     mail = message_from_string(mail_data)
-                    owner, uuid = self._get_owner(mail)
-                    if owner is None:
-                        # This shouldn't happen, may be a bug in
-                        # postfix? But we don't want to drop mail just
-                        # because of a bug. Skipping this one...
+                    uuid = self._get_owner(mail)
+                    if uuid is None:
+                        log.msg("Don't know how to deliver mail %s, skipping..." %
+                                filepath.path)
                         return
-                    log.msg("Mail owner: %s %s" % (owner, uuid))
+                    log.msg("Mail owner: %s" % (uuid,))
 
                     if uuid is None:
                         log.msg("BUG: There was no uuid!")
@@ -261,7 +252,7 @@ class MailReceiver(Service):
 
                     d = self._users_cdb.getPubKey(uuid)
                     d.addCallbacks(self._encrypt_message, log.err,
-                                   (uuid, owner, mail_data))
+                                   (uuid, mail_data))
                     d.addCallbacks(self._export_message, log.err)
                     d.addCallbacks(self._conditional_remove, log.err,
                                    (filepath,))
