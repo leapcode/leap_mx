@@ -86,7 +86,7 @@ class MailReceiver(Service):
         mask = inotify.IN_CREATE
 
         for directory, recursive in self._directories:
-            log.msg("Watching %s --- Recursive: %s" % (directory, recursive))
+            log.msg("Watching %r --- Recursive: %r" % (directory, recursive))
             self.wm.watch(filepath.FilePath(directory), mask,
                           callbacks=[self._process_incoming_email],
                           recursive=recursive)
@@ -109,10 +109,11 @@ class MailReceiver(Service):
         :rtype: tuple(str, SoledadDocument)
         """
         if uuid is None or pubkey is None or len(pubkey) == 0:
+            log.msg("_encrypt_message: Something went wrong, here's all "
+                    "I know: %r | %r" % (uuid, pubkey))
             return None, None
 
         log.msg("Encrypting message to %s's pubkey" % (uuid,))
-        log.msg("Pubkey: %s" % (pubkey,))
 
         doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
@@ -165,12 +166,11 @@ class MailReceiver(Service):
         """
         uuid, doc = uuid_doc
         if uuid is None or doc is None:
+            log.msg("_export_message: Something went wrong, here's all "
+                    "I know: %r | %r" % (uuid, doc))
             return False
 
         log.msg("Exporting message for %s" % (uuid,))
-
-        if uuid is None:
-            uuid = 0
 
         db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
         db.put_doc(doc)
@@ -192,11 +192,13 @@ class MailReceiver(Service):
         if do_remove:
             # remove the original mail
             try:
-                log.msg("Removing %s" % (filepath.path,))
+                log.msg("Removing %r" % (filepath.path,))
                 filepath.remove()
                 log.msg("Done removing")
             except Exception:
                 log.err()
+        else:
+            log.msg("Not removing %r" % (filepath.path,))
 
     def _get_owner(self, mail):
         """
@@ -235,13 +237,13 @@ class MailReceiver(Service):
         """
         try:
             if os.path.split(filepath.dirname())[-1]  == "new":
-                log.msg("Processing new mail at %s" % (filepath.path,))
+                log.msg("Processing new mail at %r" % (filepath.path,))
                 with filepath.open("r") as f:
                     mail_data = f.read()
                     mail = message_from_string(mail_data)
                     uuid = self._get_owner(mail)
                     if uuid is None:
-                        log.msg("Don't know how to deliver mail %s, skipping..." %
+                        log.msg("Don't know how to deliver mail %r, skipping..." %
                                 filepath.path)
                         return
                     log.msg("Mail owner: %s" % (uuid,))
