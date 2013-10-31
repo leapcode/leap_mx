@@ -1,0 +1,2 @@
+  o Improve logging in general and support possible unicode parameters
+    without breaking.
