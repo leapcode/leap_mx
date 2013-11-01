@@ -1,5 +1,0 @@
-  o Support more than utf8 encodings for emails.
-  o Add support for receiving mailing list mails.
-  o Use the uuid that alias_resolver returned and postfix added to the
-    mail headers, which improves performance.
-  o Look for public keys based on uuid instead of mail address.
