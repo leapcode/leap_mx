@@ -1,3 +1,15 @@
+0.3.3 Nov 1:
+  o Fix return codes for check recipient access. Fixes #3356.
+  o Improve logging in general and support possible unicode parameters
+    without breaking.
+  o Try to figure out the encoding of an email first by looking into
+    its header, if that fails then by using chardet.
+  o Support more than utf8 encodings for emails.
+  o Add support for receiving mailing list mails.
+  o Use the uuid that alias_resolver returned and postfix added to the
+    mail headers, which improves performance.
+  o Look for public keys based on uuid instead of mail address.
+
 0.3.2 Sep 6:
   o Keep file watcher in memory to prevent losing file events.
   o Properly save the incoming mail as a doc in couch.

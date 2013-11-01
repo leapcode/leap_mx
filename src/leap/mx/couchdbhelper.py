@@ -29,7 +29,6 @@ except ImportError:
     print "for instructions on getting required dependencies."
 
 try:
-    from twisted.internet import defer
     from twisted.python import log
 except ImportError:
     print "This software requires Twisted. Please see the README file"
@@ -49,16 +48,16 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Connect to a CouchDB instance.
 
-        @param host: A hostname string for the CouchDB server.
-        @type host: str
-        @param port: The port of the CouchDB server.
-        @type port: int
-        @param dbName: (optional) The default database to bind queries to.
-        @type dbName: str
-        @param username: (optional) The username for authorization.
-        @type username: str
-        @param str password: (optional) The password for authorization.
-        @type password: str
+        :param host: A hostname string for the CouchDB server.
+        :type host: str
+        :param port: The port of the CouchDB server.
+        :type port: int
+        :param dbName: (optional) The default database to bind queries to.
+        :type dbName: str
+        :param username: (optional) The username for authorization.
+        :type username: str
+        :param str password: (optional) The password for authorization.
+        :type password: str
         """
         client.CouchDB.__init__(self,
                                 host,
@@ -78,8 +77,8 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Callback for listDB that prints the available databases
 
-        @param data: response from the listDB command
-        @type data: array
+        :param data: response from the listDB command
+        :type data: array
         """
         log.msg("Available databases:")
         for database in data:
@@ -101,10 +100,10 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Check to see if a particular email or alias exists.
 
-        @param alias: A string representing the email or alias to check.
-        @type alias: str
-        @return: a deferred for this query
-        @rtype twisted.defer.Deferred
+        :param alias: A string representing the email or alias to check.
+        :type alias: str
+        :return: a deferred for this query
+        :rtype twisted.defer.Deferred
         """
         assert isinstance(address, (str, unicode)), "Email or alias queries must be string"
 
@@ -124,12 +123,12 @@ class ConnectedCouchDB(client.CouchDB):
         """
         Parses the result of the by_address query and gets the uuid
 
-        @param address: alias looked up
-        @type address: string
-        @param result: result dictionary
-        @type result: dict
-        @return: The uuid for alias if available
-        @rtype: str
+        :param address: alias looked up
+        :type address: string
+        :param result: result dictionary
+        :type result: dict
+        :return: The uuid for alias if available
+        :rtype: str
         """
         for row in result["rows"]:
             if row["key"] == address:
@@ -140,20 +139,39 @@ class ConnectedCouchDB(client.CouchDB):
                 return uuid
         return None
 
-    def getPubKey(self, address):
+    def getPubKey(self, uuid):
+        """
+        Returns a deferred that will return the pubkey for the uuid provided
+
+        :param uuid: uuid for the user to query
+        :type uuid: str
+
+        :rtype: Deferred
+        """
         d = self.openView(docId="Identity",
                           viewId="pgp_key_by_email/",
-                          key=address,
+                          user_id=uuid,
                           reduce=False,
                           include_docs=True)
 
-        d.addCallbacks(partial(self._get_pgp_key, address), log.err)
+        d.addCallbacks(partial(self._get_pgp_key, uuid), log.err)
 
         return d
 
-    def _get_pgp_key(self, address, result):
+    def _get_pgp_key(self, uuid, result):
+        """
+        Callback used to filter the correct pubkey from the result of
+        the query to the couchdb
+
+        :param uuid: uuid for the user that was queried
+        :type uuid: str
+        :param result: result dictionary for the db query
+        :type result: dict
+
+        :rtype: str or None
+        """
         for row in result["rows"]:
-            if row["key"] == address:
+            if row["doc"]["user_id"] == uuid:
                 return row["value"]
         return None
 

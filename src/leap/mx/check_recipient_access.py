@@ -29,11 +29,13 @@ from leap.mx.alias_resolver import AliasResolverFactory
 
 class LEAPPostFixTCPMapserverAccess(postfix.PostfixTCPMapServer):
     def _cbGot(self, value):
+        # For more info, see:
+        # http://www.postfix.org/tcp_table.5.html
+        # http://www.postfix.org/access.5.html
         if value is None:
-            self.sendCode(500, postfix.quote("NOT FOUND SORRY"))
+            self.sendCode(500, postfix.quote("REJECT"))
         else:
-            # We do not send the value in this case
-            self.sendCode(200)
+            self.sendCode(200, postfix.quote("OK"))
 
 
 class CheckRecipientAccessFactory(AliasResolverFactory):
