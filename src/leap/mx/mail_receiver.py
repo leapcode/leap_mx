@@ -221,6 +221,31 @@ class MailReceiver(Service):
         return uuid
 
     @defer.inlineCallbacks
+    def _step_process_mail_backend(self, filepath):
+        log.msg("Processing new mail at %r" % (filepath.path,))
+        with filepath.open("r") as f:
+            mail_data = f.read()
+            mail = message_from_string(mail_data)
+            uuid = self._get_owner(mail)
+            if uuid is None:
+                log.msg("Don't know how to deliver mail %r, skipping..." %
+                        filepath.path)
+                defer.returnValue(None)
+            log.msg("Mail owner: %s" % (uuid,))
+
+            if uuid is None:
+                log.msg("BUG: There was no uuid!")
+                defer.returnValue(None)
+
+            pubkey = yield self._users_cdb.getPubKey(uuid)
+
+            log.msg("Encrypting message to %s's pubkey" % (uuid,))
+            doc = yield self._encrypt_message(pubkey, mail_data)
+
+            do_remove = yield self._export_message(uuid, doc)
+            yield self._conditional_remove(do_remove, filepath)
+
+    @defer.inlineCallbacks
     def _process_incoming_email(self, otherself, filepath, mask):
         """
         Callback that processes incoming email.
@@ -236,27 +261,6 @@ class MailReceiver(Service):
         """
         try:
             if os.path.split(filepath.dirname())[-1]  == "new":
-                log.msg("Processing new mail at %r" % (filepath.path,))
-                with filepath.open("r") as f:
-                    mail_data = f.read()
-                    mail = message_from_string(mail_data)
-                    uuid = self._get_owner(mail)
-                    if uuid is None:
-                        log.msg("Don't know how to deliver mail %r, skipping..." %
-                                filepath.path)
-                        return
-                    log.msg("Mail owner: %s" % (uuid,))
-
-                    if uuid is None:
-                        log.msg("BUG: There was no uuid!")
-                        return
-
-                    pubkey = yield self._users_cdb.getPubKey(uuid)
-
-                    log.msg("Encrypting message to %s's pubkey" % (uuid,))
-                    doc = yield self._encrypt_message(pubkey, mail_data)
-
-                    do_remove = yield self._export_message(uuid, doc)
-                    yield self._conditional_remove(do_remove, filepath)
+                yield self._step_process_mail_backend(filepath)
         except Exception:
             log.err()
