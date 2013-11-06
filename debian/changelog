@@ -1,7 +1,7 @@
 leap-mx (0.3.3) unstable; urgency=low
 
   * Update to 0.3.3
-  * Add python-chardet in pydist-overrides so it substitutes cchardet.
+  * Add python-chardet requirements so it substitutes cchardet.
 
  -- Ben Carrillo <ben@futeisha.org>  Tue, 05 Nov 2013 11:53:34 -0200
 
