@@ -1,3 +1,9 @@
+leap-mx (0.3.3.2) unstable; urgency=low
+
+  * Cherry-pick e108a2ffec444c09b3661379a1051fda1f9952cf
+	
+ -- Micah Anderson <micah@debian.org>  Sat, 09 Nov 2013 14:32:08 -0500
+
 leap-mx (0.3.3.1) unstable; urgency=low
 
   * Add python-leap-common to pydist-overrides
