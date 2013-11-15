@@ -1,3 +1,9 @@
+0.3.4 Nov 15:
+  o Some mail may be skipped at processing because of possible
+    problems (like connectivity issues to our couch nodes), MX now
+    looks for unprocessed mails every half hour and tries to process
+    them. Fixes #3628.
+
 0.3.3 Nov 1:
   o Fix return codes for check recipient access. Fixes #3356.
   o Improve logging in general and support possible unicode parameters
