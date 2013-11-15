@@ -1,4 +1,0 @@
-  o Some mail may be skipped at processing because of possible
-    problems (like connectivity issues to our couch nodes), MX now
-    looks for unprocessed mails every half hour and tries to process
-    them. Fixes #3628.
