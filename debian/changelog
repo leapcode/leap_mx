@@ -1,3 +1,9 @@
+leap-mx (0.3.4) unstable; urgency=low
+
+  * Update to 0.3.4
+
+ -- Ben Carrillo <ben@futeisha.org>  Fri, 15 Nov 2013 23:13:24 -0200
+
 leap-mx (0.3.3.2) unstable; urgency=low
 
   * Cherry-pick e108a2ffec444c09b3661379a1051fda1f9952cf
