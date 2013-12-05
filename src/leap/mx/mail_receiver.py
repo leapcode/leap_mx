@@ -266,20 +266,29 @@ class MailReceiver(Service):
             defer.returnValue(None)
 
         self._processing_skipped = True
-        log.msg("Starting processing skipped mail...")
-        log.msg("-"*50)
+        try:
+            log.msg("Starting processing skipped mail...")
+            log.msg("-"*50)
 
-        for directory, recursive in self._directories:
-            for root, dirs, files in os.walk(directory):
-                for fname in files:
-                    fullpath = os.path.join(root, fname)
-                    fpath = filepath.FilePath(fullpath)
-                    yield self._step_process_mail_backend(fpath)
+            for directory, recursive in self._directories:
+                for root, dirs, files in os.walk(directory):
+                    for fname in files:
+                        try:
+                            fullpath = os.path.join(root, fname)
+                            fpath = filepath.FilePath(fullpath)
+                            yield self._step_process_mail_backend(fpath)
+                        except Exception as e:
+                            log.msg("Error processing skipped mail: %r" % \
+                                    (fullpath,))
+                            log.err()
+                    if not recursive:
+                        break
+        except Exception as e:
+            log.msg("Error processing skipped mail")
+            log.err()
+        finally:
+            self._processing_skipped = False
 
-                if not recursive:
-                    break
-
-        self._processing_skipped = False
         log.msg("+"*50)
         log.msg("Done processing skipped mail")
 
