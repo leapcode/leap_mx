@@ -105,7 +105,7 @@ class MailReceiver(Service):
         :param pubkey: public key for the owner of the message
         :type pubkey: str
         :param message: message contents
-        :type message: str
+        :type message: email.message.Message
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
@@ -116,16 +116,19 @@ class MailReceiver(Service):
                     "I know: %r" % (pubkey,))
             return None
 
-        doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
-
-        encoding = get_email_charset(message.decode("utf8", "replace"),
-                                     default=None)
+        # find message's encoding
+        message_as_string = message.as_string()
+        encoding = get_email_charset(
+            message_as_string.decode("utf8", "replace"),
+            default=None)
         if encoding is None:
-            result = chardet.detect(message)
+            result = chardet.detect(message_as_string)
             encoding = result["encoding"]
 
-        data = {'incoming': True, 'content': message}
+        doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
+        # store plain text if pubkey is not available
+        data = {'incoming': True, 'content': message_as_string}
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
                 self.INCOMING_KEY: True,
@@ -134,7 +137,7 @@ class MailReceiver(Service):
             }
             return doc
 
-        openpgp_key = None
+        # otherwise, encrypt
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
@@ -142,6 +145,15 @@ class MailReceiver(Service):
             # dummy one, we just care about the import of the pubkey
             openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com", key, pubkey)
 
+            # add X-Leap-Provenance header if message is not encrypted
+            if message.get_content_type() != 'multipart/encrypted' and \
+                    '-----BEGIN PGP MESSAGE-----' not in \
+                    message_as_string:
+                message.add_header(
+                    'X-Leap-Provenance',
+                    email.utils.formatdate(),
+                    pubkey=openpgp_key.key_id)
+                data = {'incoming': True, 'content': message.as_string()}
             doc.content = {
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
@@ -254,20 +266,29 @@ class MailReceiver(Service):
             defer.returnValue(None)
 
         self._processing_skipped = True
-        log.msg("Starting processing skipped mail...")
-        log.msg("-"*50)
+        try:
+            log.msg("Starting processing skipped mail...")
+            log.msg("-"*50)
 
-        for directory, recursive in self._directories:
-            for root, dirs, files in os.walk(directory):
-                for fname in files:
-                    fullpath = os.path.join(root, fname)
-                    fpath = filepath.FilePath(fullpath)
-                    yield self._step_process_mail_backend(fpath)
+            for directory, recursive in self._directories:
+                for root, dirs, files in os.walk(directory):
+                    for fname in files:
+                        try:
+                            fullpath = os.path.join(root, fname)
+                            fpath = filepath.FilePath(fullpath)
+                            yield self._step_process_mail_backend(fpath)
+                        except Exception as e:
+                            log.msg("Error processing skipped mail: %r" % \
+                                    (fullpath,))
+                            log.err()
+                    if not recursive:
+                        break
+        except Exception as e:
+            log.msg("Error processing skipped mail")
+            log.err()
+        finally:
+            self._processing_skipped = False
 
-                if not recursive:
-                    break
-
-        self._processing_skipped = False
         log.msg("+"*50)
         log.msg("Done processing skipped mail")
 
@@ -284,8 +305,8 @@ class MailReceiver(Service):
         log.msg("Processing new mail at %r" % (filepath.path,))
         with filepath.open("r") as f:
             mail_data = f.read()
-            mail = message_from_string(mail_data)
-            uuid = self._get_owner(mail)
+            msg = message_from_string(mail_data)
+            uuid = self._get_owner(msg)
             if uuid is None:
                 log.msg("Don't know how to deliver mail %r, skipping..." %
                         (filepath.path,))
@@ -297,12 +318,12 @@ class MailReceiver(Service):
                 defer.returnValue(None)
 
             pubkey = yield self._users_cdb.getPubKey(uuid)
-            if pubkey is None or len(pubkey):
+            if pubkey is None or len(pubkey) == 0:
                 log.msg("No public key, stopping the processing chain")
                 defer.returnValue(None)
 
             log.msg("Encrypting message to %s's pubkey" % (uuid,))
-            doc = yield self._encrypt_message(pubkey, mail_data)
+            doc = yield self._encrypt_message(pubkey, msg)
 
             do_remove = yield self._export_message(uuid, doc)
             yield self._conditional_remove(do_remove, filepath)
