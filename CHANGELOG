@@ -1,3 +1,7 @@
+0.3.5 Dec 10:
+  o Add X-Leap-Provenance header. Closes #4356.
+  o Add tester script to ease testing problematic emails offline.
+
 0.3.4 Nov 15:
   o Some mail may be skipped at processing because of possible
     problems (like connectivity issues to our couch nodes), MX now
