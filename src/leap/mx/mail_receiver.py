@@ -27,18 +27,12 @@ import json
 import email.utils
 import socket
 
-try:
-    import cchardet as chardet
-except ImportError:
-    import chardet
-
 from email import message_from_string
 
 from twisted.application.service import Service
 from twisted.internet import inotify, defer, task
 from twisted.python import filepath, log
 
-from leap.common.mail import get_email_charset
 from leap.soledad.common.document import SoledadDocument
 from leap.soledad.common.crypto import (
     EncryptionSchemes,
@@ -118,12 +112,6 @@ class MailReceiver(Service):
 
         # find message's encoding
         message_as_string = message.as_string()
-        encoding = get_email_charset(
-            message_as_string.decode("utf8", "replace"),
-            default=None)
-        if encoding is None:
-            result = chardet.detect(message_as_string)
-            encoding = result["encoding"]
 
         doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
 
@@ -133,7 +121,8 @@ class MailReceiver(Service):
             doc.content = {
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
-                ENC_JSON_KEY: json.dumps(data, encoding=encoding)
+                ENC_JSON_KEY: json.dumps(data,
+                                         ensure_ascii=False)
             }
             return doc
 
@@ -143,7 +132,8 @@ class MailReceiver(Service):
             key = gpg.list_keys().pop()
             # We don't care about the actual address, so we use a
             # dummy one, we just care about the import of the pubkey
-            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com", key, pubkey)
+            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com",
+                                                      key, pubkey)
 
             # add X-Leap-Provenance header if message is not encrypted
             if message.get_content_type() != 'multipart/encrypted' and \
@@ -158,7 +148,7 @@ class MailReceiver(Service):
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
-                    json.dumps(data, encoding=encoding),
+                    json.dumps(data, ensure_ascii=False),
                     openpgp_key.fingerprint,
                     symmetric=False))
             }

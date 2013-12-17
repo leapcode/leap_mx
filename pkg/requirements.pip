@@ -11,5 +11,3 @@ couchdb
 leap.common>=0.3.5
 leap.soledad.common>=0.3.0
 leap.keymanager>=0.3.4
-
-cchardet  # we fallback to chardet if this is not available, but it's preferred
