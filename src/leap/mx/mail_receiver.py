@@ -33,13 +33,12 @@ from twisted.application.service import Service
 from twisted.internet import inotify, defer, task
 from twisted.python import filepath, log
 
-from leap.soledad.common.document import SoledadDocument
 from leap.soledad.common.crypto import (
     EncryptionSchemes,
     ENC_JSON_KEY,
     ENC_SCHEME_KEY,
 )
-from leap.soledad.common.couch import CouchDatabase
+from leap.soledad.common.couch import CouchDatabase, CouchDocument
 from leap.keymanager import openpgp
 
 
@@ -103,7 +102,7 @@ class MailReceiver(Service):
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
-        :rtype: SoledadDocument
+        :rtype: CouchDocument
         """
         if pubkey is None or len(pubkey) == 0:
             log.msg("_encrypt_message: Something went wrong, here's all "
@@ -113,7 +112,7 @@ class MailReceiver(Service):
         # find message's encoding
         message_as_string = message.as_string()
 
-        doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
+        doc = CouchDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
         data = {'incoming': True, 'content': message_as_string}
@@ -157,14 +156,14 @@ class MailReceiver(Service):
 
     def _export_message(self, uuid, doc):
         """
-        Given a UUID and a SoledadDocument, it saves it directly in the
+        Given a UUID and a CouchDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
         accessible to the recipient of the mail.
 
         :param uuid: the mail owner's uuid
         :type uuid: str
-        :param doc: SoledadDocument that represents the email
-        :type doc: SoledadDocument
+        :param doc: CouchDocument that represents the email
+        :type doc: CouchDocument
 
         :return: True if it's ok to remove the message, False
                  otherwise
