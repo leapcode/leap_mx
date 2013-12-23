@@ -8,8 +8,8 @@ paisley>=0.3.1
 # for the time being.
 couchdb
 
-leap.common>=0.3.5
-leap.soledad.common>=0.3.0
-leap.keymanager>=0.3.4
+leap.common>=0.3.7
+leap.soledad.common>=0.5.0
+leap.keymanager>=0.3.8
 
 chardet  # we fallback to chardet if cchardet is not available, but it's preferred
