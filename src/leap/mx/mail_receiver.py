@@ -27,25 +27,18 @@ import json
 import email.utils
 import socket
 
-try:
-    import cchardet as chardet
-except ImportError:
-    import chardet
-
 from email import message_from_string
 
 from twisted.application.service import Service
 from twisted.internet import inotify, defer, task
 from twisted.python import filepath, log
 
-from leap.common.mail import get_email_charset
-from leap.soledad.common.document import SoledadDocument
 from leap.soledad.common.crypto import (
     EncryptionSchemes,
     ENC_JSON_KEY,
     ENC_SCHEME_KEY,
 )
-from leap.soledad.common.couch import CouchDatabase
+from leap.soledad.common.couch import CouchDatabase, CouchDocument
 from leap.keymanager import openpgp
 
 
@@ -109,7 +102,7 @@ class MailReceiver(Service):
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
-        :rtype: SoledadDocument
+        :rtype: CouchDocument
         """
         if pubkey is None or len(pubkey) == 0:
             log.msg("_encrypt_message: Something went wrong, here's all "
@@ -118,14 +111,8 @@ class MailReceiver(Service):
 
         # find message's encoding
         message_as_string = message.as_string()
-        encoding = get_email_charset(
-            message_as_string.decode("utf8", "replace"),
-            default=None)
-        if encoding is None:
-            result = chardet.detect(message_as_string)
-            encoding = result["encoding"]
 
-        doc = SoledadDocument(doc_id=str(pyuuid.uuid4()))
+        doc = CouchDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
         data = {'incoming': True, 'content': message_as_string}
@@ -133,7 +120,8 @@ class MailReceiver(Service):
             doc.content = {
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
-                ENC_JSON_KEY: json.dumps(data, encoding=encoding)
+                ENC_JSON_KEY: json.dumps(data,
+                                         ensure_ascii=False)
             }
             return doc
 
@@ -143,7 +131,8 @@ class MailReceiver(Service):
             key = gpg.list_keys().pop()
             # We don't care about the actual address, so we use a
             # dummy one, we just care about the import of the pubkey
-            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com", key, pubkey)
+            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com",
+                                                      key, pubkey)
 
             # add X-Leap-Provenance header if message is not encrypted
             if message.get_content_type() != 'multipart/encrypted' and \
@@ -158,7 +147,7 @@ class MailReceiver(Service):
                 self.INCOMING_KEY: True,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
-                    json.dumps(data, encoding=encoding),
+                    json.dumps(data, ensure_ascii=False),
                     openpgp_key.fingerprint,
                     symmetric=False))
             }
@@ -167,14 +156,14 @@ class MailReceiver(Service):
 
     def _export_message(self, uuid, doc):
         """
-        Given a UUID and a SoledadDocument, it saves it directly in the
+        Given a UUID and a CouchDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
         accessible to the recipient of the mail.
 
         :param uuid: the mail owner's uuid
         :type uuid: str
-        :param doc: SoledadDocument that represents the email
-        :type doc: SoledadDocument
+        :param doc: CouchDocument that represents the email
+        :type doc: CouchDocument
 
         :return: True if it's ok to remove the message, False
                  otherwise
