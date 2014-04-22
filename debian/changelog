@@ -1,6 +1,12 @@
+leap-mx (0.5.0) unstable; urgency=medium
+
+  * 0.5.0 final version 
+
+ -- Ben Carrillo <ben@futeisha.org>  Tue, 22 Apr 2014 08:40:16 -0500
+
 leap-mx (0.5.0~rc) unstable; urgency=low
 
-  * Update to 0.5.0 (unified release with bitmask and soledad)
+  * Update to 0.5.0 release candidate (unified release with bitmask and soledad)
 
  -- Ben Carrillo <ben@futeisha.org>  Mon, 23 Dec 2013 02:06:48 -0400
 
