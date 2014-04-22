@@ -5,7 +5,7 @@
 # unpacked source archive. Distribution tarballs contain a pre-generated copy
 # of this file.
 
-version_version = '0.5.0-rc1'
+version_version = '0.5.0'
 version_full = 'b6339a333d7d54a23d5836d1ee6f89d95beedc45'
 
 
