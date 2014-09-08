@@ -1,0 +1,19 @@
+[mail1]
+path=/path/to/Maildir/
+recursive=<whether to analyze the above path recursively or not (True/False)>
+
+[couchdb]
+user=<couch user>
+password=<password>
+server=localhost
+port=6666
+
+[alias map]
+port=4242
+
+[check recipient]
+port=2244
+
+[bounce]
+from=<address for the From: of the bounce email without domain>
+subject=Delivery failure
