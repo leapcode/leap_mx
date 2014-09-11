@@ -46,6 +46,15 @@ password = config.get("couchdb", "password")
 server = config.get("couchdb", "server")
 port = config.get("couchdb", "port")
 
+bounce_from = "bounce"
+bounce_subject = "Delivery failure"
+
+try:
+    bounce_from = config.get("bounce", "from")
+    bounce_subject = config.get("bounce", "subject")
+except ConfigParser.NoSectionError:
+    pass  # we use the defaults above
+
 alias_port = config.getint("alias map", "port")
 check_recipient_port = config.getint("check recipient", "port")
 
@@ -74,11 +83,12 @@ mail_couch_url_prefix = "http://%s:%s@%s:%s" % (user,
                                                 port)
 directories = []
 for section in config.sections():
-    if section in ("couchdb", "alias map", "check recipient"):
+    if section in ("couchdb", "alias map", "check recipient", "bounce"):
         continue
     to_watch = config.get(section, "path")
     recursive = config.getboolean(section, "recursive")
     directories.append([to_watch, recursive])
 
-mr = MailReceiver(mail_couch_url_prefix, cdb, directories)
+mr = MailReceiver(mail_couch_url_prefix, cdb, directories, bounce_from,
+                  bounce_subject)
 mr.setServiceParent(application)

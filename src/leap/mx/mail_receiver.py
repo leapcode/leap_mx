@@ -18,6 +18,16 @@
 
 """
 MailReceiver service definition
+
+If there's a user facing problem when processing an email, it will be
+bounced back to the sender.
+
+User facing problems could be:
+- Unknown user (missing uuid)
+- Public key not found
+
+Any other problem is a bug, which will be logged. Until the bug is
+fixed, the email will stay in there waiting.
 """
 
 import os
@@ -28,9 +38,13 @@ import email.utils
 import socket
 
 from email import message_from_string
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import formatdate
+from email.header import decode_header
 
 from twisted.application.service import Service
-from twisted.internet import inotify, defer, task
+from twisted.internet import inotify, defer, task, reactor
 from twisted.python import filepath, log
 
 from leap.soledad.common.crypto import (
@@ -41,6 +55,77 @@ from leap.soledad.common.crypto import (
 from leap.soledad.common.couch import CouchDatabase, CouchDocument
 from leap.keymanager import openpgp
 
+BOUNCE_TEMPLATE = """
+Delivery to the following recipient failed:
+    {0}
+
+Reasons:
+    {1}
+
+Original message:
+    {2}
+""".strip()
+
+
+from twisted.internet import protocol
+from twisted.internet.error import ProcessDone
+
+
+class BouncerSubprocessProtocol(protocol.ProcessProtocol):
+    """
+    Bouncer subprocess protocol that will feed the msg contents to be
+    bounced through stdin
+    """
+
+    def __init__(self, msg):
+        """
+        Constructor for the BouncerSubprocessProtocol
+
+        :param msg: Message to send to stdin when the process has
+                    launched
+        :type msg: str
+        """
+        self._msg = msg
+        self._outBuffer = ""
+        self._errBuffer = ""
+        self._d = None
+
+    def connectionMade(self):
+        self._d = defer.Deferred()
+
+        self.transport.write(self._msg)
+        self.transport.closeStdin()
+
+    def outReceived(self, data):
+        self._outBuffer += data
+
+    def errReceived(self, data):
+        self._errBuffer += data
+
+    def processEnded(self, reason):
+        if reason.check(ProcessDone):
+            self._d.callback(self._outBuffer)
+        else:
+            self._d.errback(reason)
+
+
+def async_check_output(args, msg):
+    """
+    Async spawn a process and return a defer to be able to check the
+    output with a callback/errback
+
+    :param args: the command to execute along with the params for it
+    :type args: list of str
+    :param msg: string that will be send to stdin of the process once
+                it's spawned
+    :type msg: str
+
+    :rtype: defer.Deferred
+    """
+    pprotocol = BouncerSubprocessProtocol(msg)
+    reactor.spawnProcess(pprotocol, args[0], args)
+    return pprotocol.d
+
 
 class MailReceiver(Service):
     """
@@ -49,7 +134,8 @@ class MailReceiver(Service):
 
     INCOMING_KEY = 'incoming'
 
-    def __init__(self, mail_couch_url, users_cdb, directories):
+    def __init__(self, mail_couch_url, users_cdb, directories, bounce_from,
+                 bounce_subject):
         """
         Constructor
 
@@ -61,6 +147,10 @@ class MailReceiver(Service):
         :type users_cdb: ConnectedCouchDB
         :param directories: list of directories to monitor
         :type directories: list of tuples (path: str, recursive: bool)
+        :param bounce_from: Email address of the bouncer
+        :type bounce_from: str
+        :param bounce_subject: Subject line used in the bounced mail
+        :type bounce_subject: str
         """
         # Service doesn't define an __init__
         self._mail_couch_url = mail_couch_url
@@ -68,6 +158,9 @@ class MailReceiver(Service):
         self._directories = directories
         self._domain = socket.gethostbyaddr(socket.gethostname())[0]
         self._processing_skipped = False
+
+        self._bounce_from = bounce_from
+        self._bounce_subject = bounce_subject
 
     def startService(self):
         """
@@ -228,6 +321,37 @@ class MailReceiver(Service):
 
         return uuid
 
+    @defer.inlineCallbacks
+    def _bounce_mail(self, orig_msg, filepath, reason):
+        """
+        Bounces the email contained in orig_msg to it's sender and
+        removes it from the queue.
+
+        :param orig_msg: Message that is going to be bounced
+        :type orig_msg: email.message.Message
+        :param filepath: Path for that message
+        :type filepath: twisted.python.filepath.FilePath
+        :param reason: Brief explanation about why it's being bounced
+        :type reason: str
+        """
+        to = orig_msg.get("From")
+
+        msg = MIMEMultipart()
+        msg['From'] = self._bounce_from
+        msg['To'] = to
+        msg['Date'] = formatdate(localtime=True)
+        msg['Subject'] = self._bounce_subject
+
+        decoded_to = " ".join([x[0] for x in decode_header(to)])
+        text = BOUNCE_TEMPLATE.format(decoded_to,
+                                      reason,
+                                      orig_msg.as_string())
+
+        msg.attach(MIMEText(text))
+
+        yield async_check_output(["/usr/sbin/sendmail", "-t"], msg.as_string())
+        yield self._conditional_remove(True, filepath)
+
     def sleep(self, secs):
         """
         Async sleep for a defer. Use this when you want to wait for
@@ -266,13 +390,13 @@ class MailReceiver(Service):
                             fullpath = os.path.join(root, fname)
                             fpath = filepath.FilePath(fullpath)
                             yield self._step_process_mail_backend(fpath)
-                        except Exception as e:
+                        except Exception:
                             log.msg("Error processing skipped mail: %r" % \
                                     (fullpath,))
                             log.err()
                     if not recursive:
                         break
-        except Exception as e:
+        except Exception:
             log.msg("Error processing skipped mail")
             log.err()
         finally:
@@ -299,6 +423,9 @@ class MailReceiver(Service):
             if uuid is None:
                 log.msg("Don't know how to deliver mail %r, skipping..." %
                         (filepath.path,))
+                bounce_reason = "Missing UUID: There was a problem " \
+                                "locating the user in our database."
+                yield self._bounce_mail(msg, filepath, bounce_reason)
                 defer.returnValue(None)
             log.msg("Mail owner: %s" % (uuid,))
 
@@ -309,6 +436,10 @@ class MailReceiver(Service):
             pubkey = yield self._users_cdb.getPubKey(uuid)
             if pubkey is None or len(pubkey) == 0:
                 log.msg("No public key, stopping the processing chain")
+                bounce_reason = "Missing PubKey: There was a problem " \
+                                "locating the user's public key in our " \
+                                "database."
+                yield self._bounce_mail(msg, filepath, bounce_reason)
                 defer.returnValue(None)
 
             log.msg("Encrypting message to %s's pubkey" % (uuid,))
@@ -340,3 +471,4 @@ class MailReceiver(Service):
         except Exception as e:
             log.msg("Something went wrong while processing {0!r}: {1!r}"
                     .format(filepath, e))
+            log.err()

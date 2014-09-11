@@ -1,0 +1,4 @@
+  o Bounce mails when there's a problematic situation for an email,
+    such as no public key. Fixes #4803.
+  o Properly log tracebacks for exceptions occuring in the mail
+    processing loop.
