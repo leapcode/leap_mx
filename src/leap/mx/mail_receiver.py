@@ -133,6 +133,7 @@ class MailReceiver(Service):
     """
 
     INCOMING_KEY = 'incoming'
+    ERROR_DECRYPTING_KEY = "errdecr"
 
     def __init__(self, mail_couch_url, users_cdb, directories, bounce_from,
                  bounce_subject):
@@ -212,6 +213,7 @@ class MailReceiver(Service):
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
                 self.INCOMING_KEY: True,
+                self.ERROR_DECRYPTING_KEY: False,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
                 ENC_JSON_KEY: json.dumps(data,
                                          ensure_ascii=False)
@@ -238,6 +240,7 @@ class MailReceiver(Service):
                 data = {'incoming': True, 'content': message.as_string()}
             doc.content = {
                 self.INCOMING_KEY: True,
+                self.ERROR_DECRYPTING_KEY: False,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
                     json.dumps(data, ensure_ascii=False),
