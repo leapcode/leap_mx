@@ -59,6 +59,9 @@ $ git clone https://github.com/leapcode/leap_mx.git
 ~~~
 Although, **it is advised** to install inside a python virtualenv.
 
+## [configuration](#configuration) ##
+A sample config file can be found in pkg/mx.conf.sample
+
 ## [running](#running) ##
 =========================
 
@@ -78,4 +81,3 @@ Our bugtracker is [here](https://leap.se/code/projects/eip/issue/new).
 Please use that for bug reports and feature requests instead of github's
 tracker. We're using github for code commenting and review between
 collaborators.
-
