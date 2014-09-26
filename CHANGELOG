@@ -1,3 +1,13 @@
+0.6.0 Sept 26, 2014:
+  o Bounce mails when there's a problematic situation for an email,
+    such as no public key. Fixes #4803.
+  o Properly log tracebacks for exceptions occuring in the mail
+    processing loop.
+  o Add errdecr key defaulting to each mail Soledad Document. Closes
+    #6072.
+  o Any inconsistent user would make the mx stop decrypting mails for
+    all subsequent users.
+
 0.5.0 Apr 4, 2014:
   o Use CouchDocument to comply with new Soledad couch backend. Fixes
     #4475.
