@@ -171,7 +171,11 @@ class ConnectedCouchDB(client.CouchDB):
         :rtype: str or None
         """
         for row in result["rows"]:
-            if row["doc"]["user_id"] == uuid:
+            user_id = row["doc"].get("user_id")
+            if not user_id:
+                print("User %s is in an inconsistent state")
+                continue
+            if user_id == uuid:
                 return row["value"]
         return None
 
