@@ -224,10 +224,6 @@ class MailReceiver(Service):
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
-            # We don't care about the actual address, so we use a
-            # dummy one, we just care about the import of the pubkey
-            openpgp_key = openpgp._build_key_from_gpg("dummy@mail.com",
-                                                      key, pubkey)
 
             # add X-Leap-Provenance header if message is not encrypted
             if message.get_content_type() != 'multipart/encrypted' and \
@@ -236,7 +232,7 @@ class MailReceiver(Service):
                 message.add_header(
                     'X-Leap-Provenance',
                     email.utils.formatdate(),
-                    pubkey=openpgp_key.key_id)
+                    pubkey=key["keyid"])
                 data = {'incoming': True, 'content': message.as_string()}
             doc.content = {
                 self.INCOMING_KEY: True,
@@ -244,7 +240,7 @@ class MailReceiver(Service):
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
                 ENC_JSON_KEY: str(gpg.encrypt(
                     json.dumps(data, ensure_ascii=False),
-                    openpgp_key.fingerprint,
+                    key["fingerprint"],
                     symmetric=False))
             }
 
