@@ -21,7 +21,8 @@ case "$1" in
                           --pidfile=$pidfile \
                           --rundir=$rundir \
                           --python=$file \
-                          --logfile=$logfile
+                          --logfile=$logfile \
+                          --syslog
         echo "."
     ;;
 
