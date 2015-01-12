@@ -22,7 +22,7 @@ case "$1" in
                           --rundir=$rundir \
                           --python=$file \
                           --logfile=$logfile \
-                          --syslog
+                          --syslog --prefix=leap-mx
         echo "."
     ;;
 
