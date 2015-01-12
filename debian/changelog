@@ -1,3 +1,10 @@
+leap-mx (0.6.0.1) unstable; urgency=medium
+
+  * Sync upstream initscript and ours, adding syslog options
+    to better handle logging (#4599, #6307)
+
+ -- Micah Anderson <micah@debian.org>  Mon, 12 Jan 2015 14:25:16 -0500
+
 leap-mx (0.6.0) unstable; urgency=medium
 
   * Update to 0.6.0 version
