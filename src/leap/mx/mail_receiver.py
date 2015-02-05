@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
-MailReceiver service definition
+MailReceiver service definition. This service monitors the incoming mail and
+process it.
+
+The MailReceiver service is configured to process incoming any skipped mail
+every half an hour, and also on service start. It can be forced to start
+processing by sending SIGUSR1 to the process.
 
 If there's a user facing problem when processing an email, it will be
 bounced back to the sender.
@@ -29,9 +33,9 @@ User facing problems could be:
 Any other problem is a bug, which will be logged. Until the bug is
 fixed, the email will stay in there waiting.
 """
-
 import os
 import uuid as pyuuid
+import signal
 
 import json
 import email.utils
@@ -43,9 +47,11 @@ from email.MIMEText import MIMEText
 from email.Utils import formatdate
 from email.header import decode_header
 
-from twisted.application.service import Service
+from twisted.application.service import Service, IService
 from twisted.internet import inotify, defer, task, reactor
 from twisted.python import filepath, log
+
+from zope.interface import implements
 
 from leap.soledad.common.crypto import (
     EncryptionSchemes,
@@ -129,8 +135,9 @@ def async_check_output(args, msg):
 
 class MailReceiver(Service):
     """
-    Service that monitors incoming email and processes it
+    Service that monitors incoming email and processes it.
     """
+    implements(IService)
 
     INCOMING_KEY = 'incoming'
     ERROR_DECRYPTING_KEY = "errdecr"
@@ -144,13 +151,17 @@ class MailReceiver(Service):
         :param mail_couch_url: URL prefix for the couchdb where mail
         should be stored
         :type mail_couch_url: str
+
         :param users_cdb: CouchDB instance from where to get the uuid
-        and pubkey for a user
+                          and pubkey for a user
         :type users_cdb: ConnectedCouchDB
+
         :param directories: list of directories to monitor
         :type directories: list of tuples (path: str, recursive: bool)
+
         :param bounce_from: Email address of the bouncer
         :type bounce_from: str
+
         :param bounce_subject: Subject line used in the bounced mail
         :type bounce_subject: str
         """
@@ -163,6 +174,11 @@ class MailReceiver(Service):
 
         self._bounce_from = bounce_from
         self._bounce_subject = bounce_subject
+
+        def _signal_handler(sig_num, stack_frame):
+            self._process_skipped()
+
+        signal.signal(signal.SIGUSR1, _signal_handler)
 
     def startService(self):
         """
