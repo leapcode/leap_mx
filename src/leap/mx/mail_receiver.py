@@ -134,6 +134,7 @@ class MailReceiver(Service):
 
     INCOMING_KEY = 'incoming'
     ERROR_DECRYPTING_KEY = "errdecr"
+    PROCESS_SKIPPED_INTERVAL = 60 * 30  # every half an hour
 
     def __init__(self, mail_couch_url, users_cdb, directories, bounce_from,
                  bounce_subject):
@@ -171,17 +172,18 @@ class MailReceiver(Service):
         self.wm = inotify.INotify()
         self.wm.startReading()
 
+        # watch the mail directory for new files and process incoming mail
         mask = inotify.IN_CREATE
-
         for directory, recursive in self._directories:
             log.msg("Watching %r --- Recursive: %r" % (directory, recursive))
             self.wm.watch(filepath.FilePath(directory), mask,
                           callbacks=[self._process_incoming_email],
                           recursive=recursive)
 
+        # schedule a periodic task to process skipped mail, but also run it
+        # immediatelly
         self._lcall = task.LoopingCall(self._process_skipped)
-        # Run once every half an hour, but don't start right now
-        self._lcall.start(interval=60*30, now=False)
+        self._lcall.start(interval=self.PROCESS_SKIPPED_INTERVAL, now=True)
 
     def _encrypt_message(self, pubkey, message):
         """
@@ -380,7 +382,7 @@ class MailReceiver(Service):
         self._processing_skipped = True
         try:
             log.msg("Starting processing skipped mail...")
-            log.msg("-"*50)
+            log.msg("-" * 50)
 
             for directory, recursive in self._directories:
                 for root, dirs, files in os.walk(directory):
@@ -390,7 +392,7 @@ class MailReceiver(Service):
                             fpath = filepath.FilePath(fullpath)
                             yield self._step_process_mail_backend(fpath)
                         except Exception:
-                            log.msg("Error processing skipped mail: %r" % \
+                            log.msg("Error processing skipped mail: %r" %
                                     (fullpath,))
                             log.err()
                     if not recursive:
@@ -401,7 +403,7 @@ class MailReceiver(Service):
         finally:
             self._processing_skipped = False
 
-        log.msg("+"*50)
+        log.msg("+" * 50)
         log.msg("Done processing skipped mail")
 
     @defer.inlineCallbacks
@@ -463,9 +465,10 @@ class MailReceiver(Service):
         """
         try:
             while self._processing_skipped:
-                log.msg("Waiting for the process of skipped mail to be done...")
+                log.msg("Waiting for the process of skipped mail to be "
+                        "done...")
                 yield self.sleep(10)  # NO-OP
-            if os.path.split(filepath.dirname())[-1]  == "new":
+            if os.path.split(filepath.dirname())[-1] == "new":
                 yield self._step_process_mail_backend(filepath)
         except Exception as e:
             log.msg("Something went wrong while processing {0!r}: {1!r}"
