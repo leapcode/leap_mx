@@ -1,3 +1,8 @@
+0.6.1 Feb 11, 2015:
+  o Process unprocessed mail when MX starts (closes #2591).
+  o Log to syslog. Closes: #6307
+  o MX log and retry when delivery directories don't exist. Closes #6687.
+
 0.6.0 Sept 26, 2014:
   o Bounce mails when there's a problematic situation for an email,
     such as no public key. Fixes #4803.

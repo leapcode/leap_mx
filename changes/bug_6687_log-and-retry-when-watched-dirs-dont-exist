@@ -1,1 +1,0 @@
-  o MX log and retry when delivery directories don't exist. Closes #6687.
