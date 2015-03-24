@@ -96,6 +96,10 @@ class BouncerSubprocessProtocol(protocol.ProcessProtocol):
         self._errBuffer = ""
         self._d = None
 
+    @property
+    def deferred(self):
+        return self._d
+
     def connectionMade(self):
         self._d = defer.Deferred()
 
@@ -130,7 +134,7 @@ def async_check_output(args, msg):
     """
     pprotocol = BouncerSubprocessProtocol(msg)
     reactor.spawnProcess(pprotocol, args[0], args)
-    return pprotocol.d
+    return pprotocol.deferred
 
 
 class MailReceiver(Service):
