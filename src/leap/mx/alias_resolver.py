@@ -28,10 +28,11 @@ TODO:
 
 try:
     # TODO: we should probably use the system alias somehow
-    # from twisted.mail      import alias
+    # from twisted.mail import alias
     from twisted.protocols import postfix
     from twisted.python import log
     from twisted.internet import defer
+    from twisted.internet.protocol import ServerFactory
 except ImportError:
     print "This software requires Twisted. Please see the README file"
     print "for instructions on getting required dependencies."
@@ -39,19 +40,20 @@ except ImportError:
 
 class LEAPPostFixTCPMapserver(postfix.PostfixTCPMapServer):
     def _cbGot(self, value):
-        if value is None:
+        uuid, pubkey = value
+        if uuid is None:
             self.sendCode(500, postfix.quote("NOT FOUND SRY"))
+        elif pubkey is None:
+            self.sendCode(400, postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
         else:
             self.sendCode(200, postfix.quote(value))
 
 
-class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
+class AliasResolverFactory(ServerFactory):
 
     protocol = LEAPPostFixTCPMapserver
 
-    def __init__(self, couchdb, *args, **kwargs):
-        postfix.PostfixTCPMapDeferringDictServerFactory.__init__(
-            self, *args, **kwargs)
+    def __init__(self, couchdb):
         self._cdb = couchdb
 
     def _to_str(self, result):
@@ -64,14 +66,14 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
             log.msg("Result not found")
         return result
 
-    def spit_result(self, result):
-        """
-        Formats the return codes in a postfix friendly format.
-        """
-        if result is None:
-            return None
-        else:
-            return defer.succeed(result)
+    def _getPubKey(self, uuid):
+        if uuid is None:
+            return defer.succeed([None, None])
+        d = defer.gatherResults([
+            self._to_str(uuid),
+            self._cdb.getPubKey(uuid),
+        ])
+        return d
 
     def get(self, key):
         """
@@ -79,13 +81,8 @@ class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
 
         At some point we will have to consider the domain part too.
         """
-        try:
-            log.msg("Query key: %s" % (key,))
-            d = self._cdb.queryByAddress(key)
-
-            d.addCallback(self._to_str)
-            d.addCallback(self.spit_result)
-            d.addErrback(log.err)
-            return d
-        except Exception as e:
-            log.err('exception in get: %r' % e)
+        log.msg("Query key: %s" % (key,))
+        d = self._cdb.queryByAddress(key)
+        d.addCallback(self._getPubKey)
+        d.addErrback(log.err)
+        return d

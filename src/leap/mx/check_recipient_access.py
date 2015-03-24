@@ -32,8 +32,11 @@ class LEAPPostFixTCPMapserverAccess(postfix.PostfixTCPMapServer):
         # For more info, see:
         # http://www.postfix.org/tcp_table.5.html
         # http://www.postfix.org/access.5.html
-        if value is None:
+        uuid, pubkey = value
+        if uuid is None:
             self.sendCode(500, postfix.quote("REJECT"))
+        elif pubkey is None:
+            self.sendCode(400, postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
         else:
             self.sendCode(200, postfix.quote("OK"))
 
