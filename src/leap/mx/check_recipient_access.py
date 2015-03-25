@@ -24,22 +24,42 @@ Test this with postmap -v -q "foo" tcp:localhost:2244
 
 from twisted.protocols import postfix
 
-from leap.mx.alias_resolver import AliasResolverFactory
+from leap.mx.tcp_map import LEAPPostfixTCPMapServerFactory
+from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
+from leap.mx.tcp_map import TCP_MAP_CODE_TEMPORARY_FAILURE
+from leap.mx.tcp_map import TCP_MAP_CODE_PERMANENT_FAILURE
 
 
-class LEAPPostFixTCPMapserverAccess(postfix.PostfixTCPMapServer):
+class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
+    """
+    A postfix tcp map recipient access checker server.
+    """
+
     def _cbGot(self, value):
-        # For more info, see:
-        # http://www.postfix.org/tcp_table.5.html
-        # http://www.postfix.org/access.5.html
+        """
+        Return a code and message depending on the result of the factory's
+        get().
+
+        For more info, see: http://www.postfix.org/access.5.html
+
+        :param value: The uuid and public key.
+        :type value: list
+        """
         uuid, pubkey = value
         if uuid is None:
-            self.sendCode(500, postfix.quote("REJECT"))
+            self.sendCode(
+                TCP_MAP_CODE_PERMANENT_FAILURE,
+                postfix.quote("REJECT"))
         elif pubkey is None:
-            self.sendCode(400, postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
+            self.sendCode(
+                TCP_MAP_CODE_TEMPORARY_FAILURE,
+                postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
         else:
-            self.sendCode(200, postfix.quote("OK"))
+            self.sendCode(
+                TCP_MAP_CODE_SUCCESS,
+                postfix.quote("OK"))
 
 
-class CheckRecipientAccessFactory(AliasResolverFactory):
-    protocol = LEAPPostFixTCPMapserverAccess
+class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
+
+    protocol = LEAPPostFixTCPMapAccessServer

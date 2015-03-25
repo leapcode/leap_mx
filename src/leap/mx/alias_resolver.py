@@ -24,65 +24,49 @@ Test this with postmap -v -q "foo" tcp:localhost:4242
 TODO:
     o Look into using twisted.protocols.postfix.policies classes for
       controlling concurrent connections and throttling resource consumption.
+    o We should probably use twisted.mail.alias somehow.
 """
 
-try:
-    # TODO: we should probably use the system alias somehow
-    # from twisted.mail import alias
-    from twisted.protocols import postfix
-    from twisted.python import log
-    from twisted.internet import defer
-    from twisted.internet.protocol import ServerFactory
-except ImportError:
-    print "This software requires Twisted. Please see the README file"
-    print "for instructions on getting required dependencies."
+
+from twisted.protocols import postfix
+
+from leap.mx.tcp_map import LEAPostfixTCPMapServerFactory
+from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
+from leap.mx.tcp_map import TCP_MAP_CODE_TEMPORARY_FAILURE
+from leap.mx.tcp_map import TCP_MAP_CODE_PERMANENT_FAILURE
 
 
-class LEAPPostFixTCPMapserver(postfix.PostfixTCPMapServer):
+class LEAPPostfixTCPMapAliasServer(postfix.PostfixTCPMapServer):
+    """
+    A postfix tcp map alias resolver server.
+    """
+
     def _cbGot(self, value):
+        """
+        Return a code and message depending on the result of the factory's
+        get().
+
+        :param value: The uuid and public key.
+        :type value: list
+        """
         uuid, pubkey = value
         if uuid is None:
-            self.sendCode(500, postfix.quote("NOT FOUND SRY"))
+            self.sendCode(
+                TCP_MAP_CODE_PERMANENT_FAILURE,
+                postfix.quote("NOT FOUND SRY"))
         elif pubkey is None:
-            self.sendCode(400, postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
+            self.sendCode(
+                TCP_MAP_CODE_TEMPORARY_FAILURE,
+                postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
         else:
-            self.sendCode(200, postfix.quote(value))
+            self.sendCode(
+                TCP_MAP_CODE_SUCCESS,
+                postfix.quote(uuid))
 
 
-class AliasResolverFactory(ServerFactory):
+class AliasResolverFactory(LEAPostfixTCPMapServerFactory):
+    """
+    A factory for postfix tcp map alias resolver servers.
+    """
 
-    protocol = LEAPPostFixTCPMapserver
-
-    def __init__(self, couchdb):
-        self._cdb = couchdb
-
-    def _to_str(self, result):
-        """
-        Properly encodes the result string if any.
-        """
-        if isinstance(result, unicode):
-            result = result.encode("utf8")
-        if result is None:
-            log.msg("Result not found")
-        return result
-
-    def _getPubKey(self, uuid):
-        if uuid is None:
-            return defer.succeed([None, None])
-        d = defer.gatherResults([
-            self._to_str(uuid),
-            self._cdb.getPubKey(uuid),
-        ])
-        return d
-
-    def get(self, key):
-        """
-        Looks up the passed key, but only up to the username id of the key.
-
-        At some point we will have to consider the domain part too.
-        """
-        log.msg("Query key: %s" % (key,))
-        d = self._cdb.queryByAddress(key)
-        d.addCallback(self._getPubKey)
-        d.addErrback(log.err)
-        return d
+    protocol = LEAPPostfixTCPMapAliasServer
