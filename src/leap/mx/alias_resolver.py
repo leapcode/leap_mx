@@ -30,9 +30,8 @@ TODO:
 
 from twisted.protocols import postfix
 
-from leap.mx.tcp_map import LEAPostfixTCPMapServerFactory
+from leap.mx.tcp_map import LEAPPostfixTCPMapServerFactory
 from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
-from leap.mx.tcp_map import TCP_MAP_CODE_TEMPORARY_FAILURE
 from leap.mx.tcp_map import TCP_MAP_CODE_PERMANENT_FAILURE
 
 
@@ -41,30 +40,25 @@ class LEAPPostfixTCPMapAliasServer(postfix.PostfixTCPMapServer):
     A postfix tcp map alias resolver server.
     """
 
-    def _cbGot(self, value):
+    def _cbGot(self, uuid):
         """
         Return a code and message depending on the result of the factory's
         get().
 
-        :param value: The uuid and public key.
+        :param value: The uuid.
         :type value: list
         """
-        uuid, pubkey = value
         if uuid is None:
             self.sendCode(
                 TCP_MAP_CODE_PERMANENT_FAILURE,
                 postfix.quote("NOT FOUND SRY"))
-        elif pubkey is None:
-            self.sendCode(
-                TCP_MAP_CODE_TEMPORARY_FAILURE,
-                postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
         else:
             self.sendCode(
                 TCP_MAP_CODE_SUCCESS,
                 postfix.quote(uuid))
 
 
-class AliasResolverFactory(LEAPostfixTCPMapServerFactory):
+class AliasResolverFactory(LEAPPostfixTCPMapServerFactory):
     """
     A factory for postfix tcp map alias resolver servers.
     """

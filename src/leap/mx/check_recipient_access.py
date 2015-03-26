@@ -23,6 +23,7 @@ Test this with postmap -v -q "foo" tcp:localhost:2244
 """
 
 from twisted.protocols import postfix
+from twisted.internet import defer
 
 from leap.mx.tcp_map import LEAPPostfixTCPMapServerFactory
 from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
@@ -33,6 +34,10 @@ from leap.mx.tcp_map import TCP_MAP_CODE_PERMANENT_FAILURE
 class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
     """
     A postfix tcp map recipient access checker server.
+
+    The server potentially receives the uuid and a PGP key for the user, which
+    are looked up by the factory, and will return a permanent or a temporary
+    failure in case either the user or the key don't exist, respectivelly.
     """
 
     def _cbGot(self, value):
@@ -61,5 +66,43 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
 
 
 class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
+    """
+    A factory for the recipient access checker.
+
+    When queried, the factory looks up the user's uuid and a PGP key for that
+    user and returns the result to the server's _cbGot() method.
+    """
 
     protocol = LEAPPostFixTCPMapAccessServer
+
+    def _getPubKey(self, uuid):
+        """
+        Look up PGP public key based on user uid.
+
+        :param uuid: The user uid.
+        :type uuid: str
+
+        :return: A deferred that is fired with the uuid and the public key, if
+                 available.
+        :rtype: DeferredList
+        """
+        if uuid is None:
+            return defer.succeed([None, None])
+        # properly encode uuid, otherwise twisted complains when replying
+        if isinstance(uuid, unicode):
+            uuid = uuid.encode("utf8")
+        return defer.gatherResults([
+            defer.succeed(uuid),
+            self._cdb.getPubKey(uuid),
+        ])
+
+    def get(self, key):
+        """
+        Look up uuid and PGP public key based on key.
+
+        :param key: The lookup key.
+        :type key: str
+        """
+        d = LEAPPostfixTCPMapServerFactory.get(self, key)
+        d.addCallback(self._getPubKey)
+        return d

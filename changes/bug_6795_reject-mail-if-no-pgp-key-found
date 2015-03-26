@@ -1,1 +1,2 @@
-  o Reject mail if no PGP key was found for a user. Closes #6795.
+  o Add PGP key lookup on access check server and reject mail if no PGP key
+    was found for the user. Closes #6795.
