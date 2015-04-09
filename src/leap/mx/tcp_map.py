@@ -43,9 +43,7 @@ class LEAPPostfixTCPMapServerFactory(ServerFactory):
 
     def get(self, key):
         """
-        Look up uuid based on key, only up to the username id of the key.
-
-        At some point we will have to consider the domain part too.
+        Look up if address exists.
 
         :param key: The lookup key.
         :type key: str

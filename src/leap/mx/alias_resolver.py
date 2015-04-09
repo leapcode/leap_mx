@@ -40,22 +40,22 @@ class LEAPPostfixTCPMapAliasServer(postfix.PostfixTCPMapServer):
     A postfix tcp map alias resolver server.
     """
 
-    def _cbGot(self, uuid):
+    def _cbGot(self, address):
         """
         Return a code and message depending on the result of the factory's
         get().
 
-        :param value: The uuid.
-        :type value: list
+        :param address: The address returned by the factory.
+        :type address: str
         """
-        if uuid is None:
+        if address is None:
             self.sendCode(
                 TCP_MAP_CODE_PERMANENT_FAILURE,
                 postfix.quote("NOT FOUND SRY"))
         else:
             self.sendCode(
                 TCP_MAP_CODE_SUCCESS,
-                postfix.quote(uuid))
+                postfix.quote(address))
 
 
 class AliasResolverFactory(LEAPPostfixTCPMapServerFactory):

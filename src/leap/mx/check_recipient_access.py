@@ -50,8 +50,8 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
         :param value: The uuid and public key.
         :type value: list
         """
-        uuid, pubkey = value
-        if uuid is None:
+        address, pubkey = value
+        if address is None:
             self.sendCode(
                 TCP_MAP_CODE_PERMANENT_FAILURE,
                 postfix.quote("REJECT"))
@@ -75,25 +75,22 @@ class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
 
     protocol = LEAPPostFixTCPMapAccessServer
 
-    def _getPubKey(self, uuid):
+    def _getPubKey(self, address):
         """
-        Look up PGP public key based on user uid.
+        Look up PGP public key based on email address.
 
-        :param uuid: The user uid.
-        :type uuid: str
+        :param address: The email address.
+        :type address: str
 
-        :return: A deferred that is fired with the uuid and the public key, if
-                 available.
+        :return: A deferred that is fired with the address and the public key, if
+                 each of them exists.
         :rtype: DeferredList
         """
-        if uuid is None:
+        if not address:
             return defer.succeed([None, None])
-        # properly encode uuid, otherwise twisted complains when replying
-        if isinstance(uuid, unicode):
-            uuid = uuid.encode("utf8")
         return defer.gatherResults([
-            defer.succeed(uuid),
-            self._cdb.getPubKey(uuid),
+            defer.succeed(address),
+            self._cdb.getPubKey(address),
         ])
 
     def get(self, key):
