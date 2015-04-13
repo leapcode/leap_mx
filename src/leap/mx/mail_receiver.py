@@ -392,15 +392,16 @@ class MailReceiver(Service):
         :param reason: Brief explanation about why it's being bounced
         :type reason: str
         """
-        to = orig_msg.get("From")
+        orig_from = orig_msg.get("From")
+        orig_to = orig_msg.get("To")
 
         msg = MIMEMultipart()
         msg['From'] = self._bounce_from
-        msg['To'] = to
+        msg['To'] = orig_from
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = self._bounce_subject
 
-        decoded_to = " ".join([x[0] for x in decode_header(to)])
+        decoded_to = " ".join([x[0] for x in decode_header(orig_to)])
         text = BOUNCE_TEMPLATE.format(decoded_to,
                                       reason,
                                       orig_msg.as_string())
