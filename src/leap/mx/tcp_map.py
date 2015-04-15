@@ -17,8 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from twisted.python import log
+from abc import ABCMeta
+from abc import abstractproperty
+
 from twisted.internet.protocol import ServerFactory
+from twisted.python import log
 
 
 # For info on codes, see: http://www.postfix.org/tcp_table.5.html
@@ -27,10 +30,13 @@ TCP_MAP_CODE_TEMPORARY_FAILURE = 400
 TCP_MAP_CODE_PERMANENT_FAILURE = 500
 
 
-class LEAPPostfixTCPMapServerFactory(ServerFactory):
+class LEAPPostfixTCPMapServerFactory(ServerFactory, object):
     """
     A factory for postfix tcp map servers.
     """
+
+    __metaclass__ = ABCMeta
+
 
     def __init__(self, couchdb):
         """
@@ -41,14 +47,22 @@ class LEAPPostfixTCPMapServerFactory(ServerFactory):
         """
         self._cdb = couchdb
 
-    def get(self, key):
-        """
-        Look up if address exists.
+    @abstractproperty
+    def _query_message(self):
+        pass
 
-        :param key: The lookup key.
-        :type key: str
+    def get(self, lookup_key):
         """
-        log.msg("Query key: %s" % (key,))
-        d = self._cdb.queryByAddress(key)
+        Look up user based on lookup_key.
+
+        :param lookup_key: The lookup key.
+        :type lookup_key: str
+
+        :return: A deferred that will be fired with the user's address, uuid
+                 and pgp key.
+        :rtype: Deferred
+        """
+        log.msg("%s %s" % (self._query_message, lookup_key,))
+        d = self._cdb.getUuidAndPubkey(lookup_key)
         d.addErrback(log.err)
         return d

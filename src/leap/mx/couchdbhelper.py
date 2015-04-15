@@ -71,56 +71,63 @@ class ConnectedCouchDB(client.CouchDB):
         """
         pass
 
-    def queryByAddress(self, address):
+    def getUuidAndPubkey(self, address):
         """
-        Check to see if a particular email or alias exists.
+        Query couch and return a deferred that will fire with the uuid and pgp
+        public key for address.
 
         :param address: A string representing the email or alias to check.
         :type address: str
-        :return: a deferred for this query
+        :return: A deferred that will fire with the user's uuid and pgp public
+                 key.
         :rtype twisted.defer.Deferred
         """
         # TODO: Cache results
         d = self.openView(docId="Identity",
                           viewId="by_address/",
                           key=address,
-                          reduce=True,
-                          include_docs=False)
+                          reduce=False,
+                          include_docs=True)
 
-        def _callback(result):
-            if len(result["rows"]):
-                return address
-            return None
+        def _get_uuid_and_pubkey_cbk(result):
+            uuid = None
+            pubkey = None
+            if result["rows"]:
+                doc = result["rows"][0]["doc"]
+                uuid = doc["user_id"]
+                if "keys" in doc:
+                    pubkey = doc["keys"]["pgp"]
+            return uuid, pubkey
 
-        d.addCallbacks(_callback, log.err)
-
+        d.addCallback(_get_uuid_and_pubkey_cbk)
         return d
 
-    def getPubKey(self, address):
+    def getPubkey(self, uuid):
         """
-        Returns a deferred that will fire with the pubkey for the address.
+        Query couch and return a deferred that will fire with the pgp public
+        key for user with given uuid.
 
-        :param address: email address to query
-        :type address: str
+        :param uuid: The uuid of a user
+        :type uuid: str
 
+        :return: A deferred that will fire with the pgp public key for
+                 the user.
         :rtype: Deferred
         """
         d = self.openView(docId="Identity",
-                          viewId="pgp_key_by_email/",
-                          key=address,
+                          viewId="by_user_id/",
+                          key=uuid,
                           reduce=False,
-                          include_docs=False)
+                          include_docs=True)
 
-        def _callback(result):
-            if not result["rows"]:
-                log.msg("No PGP public key found for %s." % address)
-                return None
-            if len(result["rows"]) > 1:
-                log.msg("More than one PGP public key found for %s, "
-                        "will pick the first one found." % address)
-            row = result["rows"].pop(0)
-            return row["value"]
+        def _get_pubkey_cbk(result):
+            pubkey = None
+            try:
+                doc = result["rows"][0]["doc"]
+                pubkey = doc["keys"]["pgp"]
+            except (KeyError, IndexError):
+                pass
+            return pubkey
 
-        d.addCallbacks(_callback, log.err)
-
+        d.addCallbacks(_get_pubkey_cbk, log.err)
         return d

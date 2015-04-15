@@ -491,7 +491,7 @@ class MailReceiver(Service):
                 log.msg("BUG: There was no uuid!")
                 defer.returnValue(None)
 
-            pubkey = yield self._users_cdb.getPubKey(uuid)
+            pubkey = yield self._users_cdb.getPubkey(uuid)
             if pubkey is None or len(pubkey) == 0:
                 log.msg("No public key, stopping the processing chain")
                 bounce_reason = "Missing PubKey: There was a problem " \

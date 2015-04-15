@@ -23,7 +23,6 @@ Test this with postmap -v -q "foo" tcp:localhost:2244
 """
 
 from twisted.protocols import postfix
-from twisted.internet import defer
 
 from leap.mx.tcp_map import LEAPPostfixTCPMapServerFactory
 from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
@@ -50,8 +49,8 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
         :param value: The uuid and public key.
         :type value: list
         """
-        address, pubkey = value
-        if address is None:
+        uuid, pubkey = value
+        if uuid is None:
             self.sendCode(
                 TCP_MAP_CODE_PERMANENT_FAILURE,
                 postfix.quote("REJECT"))
@@ -75,31 +74,7 @@ class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
 
     protocol = LEAPPostFixTCPMapAccessServer
 
-    def _getPubKey(self, address):
-        """
-        Look up PGP public key based on email address.
+    @property
+    def _query_message(self):
+        return "Checking recipient access for"
 
-        :param address: The email address.
-        :type address: str
-
-        :return: A deferred that is fired with the address and the public key, if
-                 each of them exists.
-        :rtype: DeferredList
-        """
-        if not address:
-            return defer.succeed([None, None])
-        return defer.gatherResults([
-            defer.succeed(address),
-            self._cdb.getPubKey(address),
-        ])
-
-    def get(self, key):
-        """
-        Look up uuid and PGP public key based on key.
-
-        :param key: The lookup key.
-        :type key: str
-        """
-        d = LEAPPostfixTCPMapServerFactory.get(self, key)
-        d.addCallback(self._getPubKey)
-        return d
