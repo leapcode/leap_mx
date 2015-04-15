@@ -41,10 +41,6 @@ import json
 import email.utils
 
 from email import message_from_string
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-from email.Utils import formatdate
-from email.header import decode_header
 
 from twisted.application.service import Service, IService
 from twisted.internet import inotify, defer, task, reactor
@@ -52,88 +48,15 @@ from twisted.python import filepath, log
 
 from zope.interface import implements
 
-from leap.soledad.common.crypto import (
-    EncryptionSchemes,
-    ENC_JSON_KEY,
-    ENC_SCHEME_KEY,
-)
+from leap.soledad.common.crypto import EncryptionSchemes
+from leap.soledad.common.crypto import ENC_JSON_KEY
+from leap.soledad.common.crypto import ENC_SCHEME_KEY
 from leap.soledad.common.couch import CouchDatabase, CouchDocument
+
 from leap.keymanager import openpgp
 
-BOUNCE_TEMPLATE = """
-Delivery to the following recipient failed:
-    {0}
-
-Reasons:
-    {1}
-
-Original message:
-    {2}
-""".strip()
-
-
-from twisted.internet import protocol
-from twisted.internet.error import ProcessDone
-
-
-class BouncerSubprocessProtocol(protocol.ProcessProtocol):
-    """
-    Bouncer subprocess protocol that will feed the msg contents to be
-    bounced through stdin
-    """
-
-    def __init__(self, msg):
-        """
-        Constructor for the BouncerSubprocessProtocol
-
-        :param msg: Message to send to stdin when the process has
-                    launched
-        :type msg: str
-        """
-        self._msg = msg
-        self._outBuffer = ""
-        self._errBuffer = ""
-        self._d = None
-
-    @property
-    def deferred(self):
-        return self._d
-
-    def connectionMade(self):
-        self._d = defer.Deferred()
-
-        self.transport.write(self._msg)
-        self.transport.closeStdin()
-
-    def outReceived(self, data):
-        self._outBuffer += data
-
-    def errReceived(self, data):
-        self._errBuffer += data
-
-    def processEnded(self, reason):
-        if reason.check(ProcessDone):
-            self._d.callback(self._outBuffer)
-        else:
-            self._d.errback(reason)
-
-
-def async_check_output(args, msg):
-    """
-    Async spawn a process and return a defer to be able to check the
-    output with a callback/errback
-
-    :param args: the command to execute along with the params for it
-    :type args: list of str
-    :param msg: string that will be send to stdin of the process once
-                it's spawned
-    :type msg: str
-
-    :rtype: defer.Deferred
-    """
-    pprotocol = BouncerSubprocessProtocol(msg)
-    reactor.spawnProcess(pprotocol, args[0], args)
-    return pprotocol.deferred
+from leap.mx.bounce import bounce_message
+from leap.mx.bounce import InvalidReturnPathError
 
 
 class MailReceiver(Service):
@@ -376,10 +299,10 @@ class MailReceiver(Service):
         return uuid
 
     @defer.inlineCallbacks
-    def _bounce_mail(self, orig_msg, filepath, reason):
+    def _bounce_message(self, orig_msg, filepath, reason):
         """
-        Bounces the email contained in orig_msg to it's sender and
-        removes it from the queue.
+        Bounce the message contained in orig_msg to it's sender and
+        remove it from the queue.
 
         :param orig_msg: Message that is going to be bounced
         :type orig_msg: email.message.Message
@@ -388,23 +311,12 @@ class MailReceiver(Service):
         :param reason: Brief explanation about why it's being bounced
         :type reason: str
         """
-        orig_from = orig_msg.get("From")
-        orig_to = orig_msg.get("To")
-
-        msg = MIMEMultipart()
-        msg['From'] = self._bounce_from
-        msg['To'] = orig_from
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = self._bounce_subject
-
-        decoded_to = " ".join([x[0] for x in decode_header(orig_to)])
-        text = BOUNCE_TEMPLATE.format(decoded_to,
-                                      reason,
-                                      orig_msg.as_string())
-
-        msg.attach(MIMEText(text))
-
-        yield async_check_output(["/usr/sbin/sendmail", "-t"], msg.as_string())
+        try:
+            yield bounce_message(
+                self._bounce_from, self._bounce_subject, orig_msg, reason)
+        except InvalidReturnPathError:
+            # give up bouncing this message!
+            log.msg("Will not bounce message because of invalid return path.")
         yield self._conditional_remove(True, filepath)
 
     def sleep(self, secs):
@@ -479,7 +391,7 @@ class MailReceiver(Service):
                         (filepath.path,))
                 bounce_reason = "Missing UUID: There was a problem " \
                                 "locating the user in our database."
-                yield self._bounce_mail(msg, filepath, bounce_reason)
+                yield self._bounce_message(msg, filepath, bounce_reason)
                 defer.returnValue(None)
             log.msg("Mail owner: %s" % (uuid,))
 
@@ -489,11 +401,13 @@ class MailReceiver(Service):
 
             pubkey = yield self._users_cdb.getPubkey(uuid)
             if pubkey is None or len(pubkey) == 0:
-                log.msg("No public key, stopping the processing chain")
-                bounce_reason = "Missing PubKey: There was a problem " \
-                                "locating the user's public key in our " \
-                                "database."
-                yield self._bounce_mail(msg, filepath, bounce_reason)
+                log.msg(
+                    "No public key for %s, stopping the processing chain."
+                    % uuid)
+                bounce_reason = "Missing PGP public key: There was a " \
+                                "problem locating the user's public key in " \
+                                "our database."
+                yield self._bounce_message(msg, filepath, bounce_reason)
                 defer.returnValue(None)
 
             log.msg("Encrypting message to %s's pubkey" % (uuid,))

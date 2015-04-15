@@ -46,8 +46,8 @@ password = config.get("couchdb", "password")
 server = config.get("couchdb", "server")
 port = config.get("couchdb", "port")
 
-bounce_from = "MAILER-DAEMON"
-bounce_subject = "Delivery failure"
+bounce_from = "Mail Delivery Subsystem <MAILER-DAEMON>"
+bounce_subject = "Undelivered Mail Returned to Sender"
 
 try:
     bounce_from = config.get("bounce", "from")
