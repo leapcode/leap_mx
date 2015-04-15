@@ -39,7 +39,6 @@ import signal
 
 import json
 import email.utils
-import socket
 
 from email import message_from_string
 from email.MIMEMultipart import MIMEMultipart
@@ -181,8 +180,6 @@ class MailReceiver(Service):
         self._directories = directories
         self._bounce_from = bounce_from
         self._bounce_subject = bounce_subject
-
-        self._domain = socket.gethostbyaddr(socket.gethostname())[0]
         self._processing_skipped = False
 
     def startService(self):
@@ -357,7 +354,7 @@ class MailReceiver(Service):
 
     def _get_owner(self, mail):
         """
-        Given an email, returns the uuid of the owner.
+        Given an email, return the uuid of the owner.
 
         :param mail: mail to analyze
         :type mail: email.message.Message
@@ -365,18 +362,17 @@ class MailReceiver(Service):
         :returns: uuid
         :rtype: str or None
         """
-        uuid = None
-
+        # we expect the topmost "Delivered-To" header to indicate the correct
+        # final delivery address. It should consist of <uuid>@<domain>, as the
+        # earlier alias resolver query should have translated the username to
+        # the user id. See https://leap.se/code/issues/6858 for more info.
         delivereds = mail.get_all("Delivered-To")
         if delivereds is None:
+            # XXX this should not happen! see the comment above
             return None
-        for to in delivereds:
-            name, addr = email.utils.parseaddr(to)
-            parts = addr.split("@")
-            if len(parts) > 1 and parts[1] == self._domain:
-                uuid = parts[0]
-                break
-
+        final_address = delivereds.pop(0)
+        _, addr = email.utils.parseaddr(final_address)
+        uuid, _ = addr.split("@")
         return uuid
 
     @defer.inlineCallbacks
