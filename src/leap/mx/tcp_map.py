@@ -30,6 +30,10 @@ TCP_MAP_CODE_TEMPORARY_FAILURE = 400
 TCP_MAP_CODE_PERMANENT_FAILURE = 500
 
 
+# we have to also extend from object here to make the class a new-style class.
+# If we don't, we get a TypeError because "new-style classes can't have only
+# classic bases". This has to do with the way abc.ABCMeta works and the old
+# and new style of python classes.
 class LEAPPostfixTCPMapServerFactory(ServerFactory, object):
     """
     A factory for postfix tcp map servers.

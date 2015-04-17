@@ -19,6 +19,12 @@
 """
 Classes for resolving postfix aliases.
 
+The resolver is queried by the mail server before delivery to the mail spool
+directory, and should return the user uuid. This way, we get rid from the user
+address early and the mail server will delivery the message to
+"<uuid>@<domain>". Later, the mail receiver part of MX will parse the
+"Delivered-To" header to extract the uuid and fetch the user's pgp public key.
+
 Test this with postmap -v -q "foo" tcp:localhost:4242
 
 TODO:

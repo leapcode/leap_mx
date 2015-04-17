@@ -28,32 +28,3 @@ a viable protocol for this, and how would it interact with CouchDB?
 
 4. What lib should we use for Python + Twisted + GPG/PGP ?
    4.a. It looks like most people are using python-gnupg...
-
-
-## Tickets ##
--------------
-
-'''To be created:'''
-
-ticket for feature-alias_resolver_couchdb_support:
-
-    o The alias resolver needs to speak to a couchdb/bigcouch
-    instance(s). Currently, it merely creates an in-memory dictionary
-    mapping. It seems like paisley is the best library for this.
-
-ticket for feature-check_recipient: 
-
-    o Need various errors for anything that could go wrong, e.g. the recipient
-      address is malformed, sender doesn't have permissions to send to such
-      address, etc.
-    o These errcodes need to follow the SMTP server transport code spec.
-
-ticket for feature-virtual_alias_map: 
-
-    o Get the recipient's userid from couchdb.
-
-ticket for feature-evaluate_python_gnupg:
-
-    o Briefly audit library in order to assess if it has the necessary
-    features, as well as its general code quality.
-

@@ -17,7 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Classes for resolving postfix recipient access
+Classes for resolving postfix recipient access.
+
+The resolver is queried by the mail server before delivery to the mail spool
+directory, and should check if the address is able to receive messages.
+Examples of reasons for denying delivery would be that the user is out of
+quota, is user, or have no pgp public key in the server.
 
 Test this with postmap -v -q "foo" tcp:localhost:2244
 """
@@ -43,6 +48,9 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
         """
         Return a code and message depending on the result of the factory's
         get().
+
+        If there's no pgp public key for the user, we currently return a
+        temporary failure saying that the user account is disabled.
 
         For more info, see: http://www.postfix.org/access.5.html
 
