@@ -1,83 +1,56 @@
-leap_mx
+Leap MX
 =======
-**Note:** Currently in development. Feel free to test, and please [report
- bugs on our tracker](https://we.riseup.net/leap/mx) or [by email](mailto:isis@leap.se).
+
+**Note:** Currently in development. Feel free to test, and please [report bugs
+on our tracker](https://we.riseup.net/leap/mx) or [by
+email](mailto:discuss@leap.se).
 
 An asynchronous, transparently-encrypting remailer for the LEAP platform,
 using BigCouch/CouchDB and PGP/GnuPG, written in Twisted Python.
 
-## [install](#install) ##
+## Installing
 
-### [virtualenv](#virtualenv) ###
-=================================
-Impatient? Don't like virtualenvs? [tl;dr](#tl;dr)
+  * Leap MX is available as a debian package in [Leap
+    repository](http://deb.leap.se/repository/).
+  * A python package is available in
+    [pypi](https://pypi.python.org/pypi/leap.mx). Use ./pkg/requirements.pip
+    to install requirements.
+  * Source code is available in [github](https://github.com/leapcode/leap_mx).
 
-Virtualenv is somewhat equivalent to fakeroot for python packages, and -- due
-to being packaged with copies of pip and python -- can be used to bootstrap
-its own install process, allowing pip and python to be used with sudo.
+## Configuring
 
-#### installing without sudo ####
-
-To install without using sudo, a bootstrap script to handle the setup process
-is provided. It does the following:
-
- 1. Download, over SSL, the latest tarballs for virtualenv and
- virtualenvwrapper from pypi.
- 2. Unpack the tarballs, use the system python interpreter to call the
- virtualenv.py script to setup a bootstrap virtual environment.
- 3. Use the pip installed in the bootstrap virtualenv to install
- virtualenvwrapper in the bootstrap virtualenv.
- 4. Obtain a copy of leap_mx with git clone.
- 5. Use ```mkvirtualenv``` included in the virtualenvwrapper inside the
- bootstrap virtualenv to install a project virtualenv for leap_mx.
-
-To use the bootstrap script, do:
-~~~
-$ wget -O bootstrap https://raw.github.com/isislovecruft/leap_mx/fix/no-suid-for-virtualenv/bootstrap
-$ ./bootstrap
-$ workon leap_mx
-~~~
-
-#### installing in a regular virtualenv ###
-To install python, virtualenv, and get started, do:
-
-~~~
-$ sudo apt-get install python2.7 python-dev python-virtualenv virtualenvwrapper
-$ git clone https://github.com/leapcode/leap_mx.git leap_mx
-$ export WORKON_LEAPMX=${PWD}/leap_mx
-$ source /usr/local/bin/virtualenvwrapper.sh
-$ mkvirtualenv -a $WORKON_LEAPMX -r ${WORKON_LEAPMX}/pkg/requirements.pip \
-      --no-site-packages --setuptools --unzip-setuptools leap_mx
-~~~
-
-### [tl;dr](#tl;dr) ###
-To get started quickly, without virtualenv, do:
-~~~
-$ sudo apt-get install python git
-$ git clone https://github.com/leapcode/leap_mx.git
-# pip install -r ./leap_mx/pkg/requirements.pip
-~~~
-Although, **it is advised** to install inside a python virtualenv.
-
-## [configuration](#configuration) ##
 A sample config file can be found in pkg/mx.conf.sample
 
-## [running](#running) ##
-=========================
+## Running
 
-To get running, clone this repo, and (assuming you've already set up your
-virtualenv and obtained all the requirements) do:
+The debian package contains an initscript for the service. If you want to run
+from source or from the python package, maybe setup a virtualenv and do:
 
 ~~~
-$ twistd -ny mx.tac
+# git clone or unzip the python package, change into the dir, and do:
+$ python setup.py install
+# copy ./pkg/mx.conf.sample to /etc/leap/mx.conf and edit that file, then run:
+$ twistd -ny pkg/mx.tac
 ~~~
 
-## [hacking](#hacking) ##
-=========================
-Please see the HACKING and DESIGN docs.
+## Hacking
 
-Our bugtracker is [here](https://leap.se/code/projects/eip/issue/new).
+Please see the doc/DESIGN docs.
+
+Our bugtracker is [here](https://leap.se/code/projects/mx).
 
 Please use that for bug reports and feature requests instead of github's
 tracker. We're using github for code commenting and review between
 collaborators.
+
+## Issues
+
+* see the [Changelog](./CHANGELOG) for details of all major changes in the different versions
+
+### 0.6.1
+
+* Bouncing messages can get into a bouncing loop (#6858)
+
+### 0.6.0
+
+* leap-mx needs to get restarted after the first incoming mail is delivered (#6687)

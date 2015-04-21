@@ -10,7 +10,7 @@ License: AGPL
 Files: debian/*
 Copyright: Copyright 2013 Micah Anderson <micah@leap.se>
 License: GPL-3+
- 
+
 License: GPL-3+
  On Debian systems, the complete text of the GNU General
  Public License can be found in `/usr/share/common-licenses/GPL'.
@@ -368,7 +368,7 @@ License: AGPL
  Additional terms, permissive or non-permissive, may be stated in the form of a
  separately written license, or stated as exceptions; the above requirements
  apply either way.
- . 
+ .
  8. Termination.
  .
  You may not propagate or modify a covered work except as expressly provided
@@ -492,7 +492,7 @@ License: AGPL
  Nothing in this License shall be construed as excluding or limiting any implied
  license or other defenses to infringement that may otherwise be available to
  you under applicable patent law.
- . 
+ .
  12. No Surrender of Others' Freedom.
  .
  If conditions are imposed on you (whether by court order, agreement or
@@ -538,7 +538,7 @@ License: AGPL
  published by the Free Software Foundation. If the Program does not specify a
  version number of the GNU Affero General Public License, you may choose any
  version ever published by the Free Software Foundation.
- . 
+ .
  If the Program specifies that a proxy can decide which future versions of the
  GNU Affero General Public License can be used, that proxy's public statement of
  acceptance of a version permanently authorizes you to choose that version for
@@ -549,7 +549,7 @@ License: AGPL
  copyright holder as a result of your choosing to follow a later version.
  .
  15. Disclaimer of Warranty.
- . 
+ .
  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE
  LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER
  PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER

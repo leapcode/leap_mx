@@ -1,3 +1,10 @@
+0.6.2 Apr 21, 2015:
+  o Add PGP key lookup on access check server and reject mail if no PGP key
+    was found for the user. Closes #6795.
+  o Fix bounce message recipient. Closes #6854.
+  o Implement bouncing as per RFCs 6522, 3834 and 3464. Closes #6858.
+  o Correctly return async bouncer deferred.
+
 0.6.1 Feb 11, 2015:
   o Process unprocessed mail when MX starts (closes #2591).
   o Log to syslog. Closes: #6307

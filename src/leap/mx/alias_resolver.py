@@ -19,73 +19,62 @@
 """
 Classes for resolving postfix aliases.
 
+The resolver is queried by the mail server before delivery to the mail spool
+directory, and should return the user uuid. This way, we get rid from the user
+address early and the mail server will delivery the message to
+"<uuid>@<domain>". Later, the mail receiver part of MX will parse the
+"Delivered-To" header to extract the uuid and fetch the user's pgp public key.
+
 Test this with postmap -v -q "foo" tcp:localhost:4242
 
 TODO:
     o Look into using twisted.protocols.postfix.policies classes for
       controlling concurrent connections and throttling resource consumption.
+    o We should probably use twisted.mail.alias somehow.
 """
 
-try:
-    # TODO: we should probably use the system alias somehow
-    # from twisted.mail      import alias
-    from twisted.protocols import postfix
-    from twisted.python import log
-    from twisted.internet import defer
-except ImportError:
-    print "This software requires Twisted. Please see the README file"
-    print "for instructions on getting required dependencies."
+
+from twisted.protocols import postfix
+
+from leap.mx.tcp_map import LEAPPostfixTCPMapServerFactory
+from leap.mx.tcp_map import TCP_MAP_CODE_SUCCESS
+from leap.mx.tcp_map import TCP_MAP_CODE_PERMANENT_FAILURE
 
 
-class LEAPPostFixTCPMapserver(postfix.PostfixTCPMapServer):
-    def _cbGot(self, value):
-        if value is None:
-            self.sendCode(500, postfix.quote("NOT FOUND SRY"))
+class LEAPPostfixTCPMapAliasServer(postfix.PostfixTCPMapServer):
+    """
+    A postfix tcp map alias resolver server.
+    """
+
+    def _cbGot(self, user_data):
+        """
+        Return a code and message depending on the result of the factory's
+        get().
+
+        :param user_data: The user's uuid and pgp public key.
+        :type user_data: list
+        """
+        uuid, _ = user_data
+        if uuid is None:
+            self.sendCode(
+                TCP_MAP_CODE_PERMANENT_FAILURE,
+                postfix.quote("NOT FOUND SRY"))
         else:
-            self.sendCode(200, postfix.quote(value))
+            # properly encode uuid, otherwise twisted complains when replying
+            if isinstance(uuid, unicode):
+                uuid = uuid.encode("utf8")
+            self.sendCode(
+                TCP_MAP_CODE_SUCCESS,
+                postfix.quote(uuid))
 
 
-class AliasResolverFactory(postfix.PostfixTCPMapDeferringDictServerFactory):
+class AliasResolverFactory(LEAPPostfixTCPMapServerFactory):
+    """
+    A factory for postfix tcp map alias resolver servers.
+    """
 
-    protocol = LEAPPostFixTCPMapserver
+    protocol = LEAPPostfixTCPMapAliasServer
 
-    def __init__(self, couchdb, *args, **kwargs):
-        postfix.PostfixTCPMapDeferringDictServerFactory.__init__(
-            self, *args, **kwargs)
-        self._cdb = couchdb
-
-    def _to_str(self, result):
-        """
-        Properly encodes the result string if any.
-        """
-        if isinstance(result, unicode):
-            result = result.encode("utf8")
-        if result is None:
-            log.msg("Result not found")
-        return result
-
-    def spit_result(self, result):
-        """
-        Formats the return codes in a postfix friendly format.
-        """
-        if result is None:
-            return None
-        else:
-            return defer.succeed(result)
-
-    def get(self, key):
-        """
-        Looks up the passed key, but only up to the username id of the key.
-
-        At some point we will have to consider the domain part too.
-        """
-        try:
-            log.msg("Query key: %s" % (key,))
-            d = self._cdb.queryByAddress(key)
-
-            d.addCallback(self._to_str)
-            d.addCallback(self.spit_result)
-            d.addErrback(log.err)
-            return d
-        except Exception as e:
-            log.err('exception in get: %r' % e)
+    @property
+    def _query_message(self):
+        return "Resolving alias for"

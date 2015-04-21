@@ -26,7 +26,7 @@ leap-mx (0.5.0) unstable; urgency=medium
 
 leap-mx (0.3.5) unstable; urgency=low
 
-  * Update to 0.3.5 
+  * Update to 0.3.5
 
  -- Ben Carrillo <ben@futeisha.org>  Tue, 10 Dec 2013 16:02:10 -0400
 
@@ -39,7 +39,7 @@ leap-mx (0.3.4) unstable; urgency=low
 leap-mx (0.3.3.2) unstable; urgency=low
 
   * Cherry-pick e108a2ffec444c09b3661379a1051fda1f9952cf
-	
+
  -- Micah Anderson <micah@debian.org>  Sat, 09 Nov 2013 14:32:08 -0500
 
 leap-mx (0.3.3.1) unstable; urgency=low
@@ -64,7 +64,7 @@ leap-mx (0.3.2) unstable; urgency=low
 
 leap-mx (0.3.1.5) unstable; urgency=low
 
-  * Cherry pick fix from 
+  * Cherry pick fix from
     https://github.com/chiiph/leap_mx/commit/78f6ca775dc42eba69f2dc1e134ca360c0813aff
     to keep file watcher in memory to prevent losing file events
 
