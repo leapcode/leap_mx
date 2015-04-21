@@ -45,12 +45,12 @@ collaborators.
 
 ## Issues
 
-. see the [Changelog](./CHANGELOG) for details of all major changes in the different versions
+* see the [Changelog](./CHANGELOG) for details of all major changes in the different versions
 
 ### 0.6.1
 
-. Bouncing messages can get into a bouncing loop (#6858)
+* Bouncing messages can get into a bouncing loop (#6858)
 
 ### 0.6.0
 
-. leap-mx needs to get restarted after the first incoming mail is delivered (#6687)
+* leap-mx needs to get restarted after the first incoming mail is delivered (#6687)
