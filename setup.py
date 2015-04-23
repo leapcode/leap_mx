@@ -113,8 +113,7 @@ else:
     # be automatically
     # placed by distutils, using whatever interpreter is
     # available.
-    data_files = [("/usr/local/bin/", ["pkg/mx.tac"]),
-                  ("/etc/init.d/", ["pkg/leap_mx"])]
+    data_files = [("/usr/local/bin/", ["pkg/mx.tac"])]
 setup(
     name='leap.mx',
     version=VERSION,
