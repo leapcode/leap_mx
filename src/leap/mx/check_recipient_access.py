@@ -84,5 +84,5 @@ class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
 
     @property
     def _query_message(self):
-        return "Checking recipient access for"
+        return "check recipient access"
 
