@@ -5,4 +5,4 @@ rm ${VERSION_FILE}
 python setup.py freeze_debianver
 sed -i 's/-dirty//g' ${VERSION_FILE}
 git add ${VERSION_FILE}
-git commit -m "freeze debian version"
+git commit -m "[pkg] freeze debian version"
