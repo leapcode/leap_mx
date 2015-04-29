@@ -77,4 +77,4 @@ class AliasResolverFactory(LEAPPostfixTCPMapServerFactory):
 
     @property
     def _query_message(self):
-        return "Resolving alias for"
+        return "virtual alias map"

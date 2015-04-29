@@ -66,7 +66,7 @@ class LEAPPostfixTCPMapServerFactory(ServerFactory, object):
                  and pgp key.
         :rtype: Deferred
         """
-        log.msg("%s %s" % (self._query_message, lookup_key,))
+        log.msg("%s: %s" % (self._query_message, lookup_key,))
         d = self._cdb.getUuidAndPubkey(lookup_key)
         d.addErrback(log.err)
         return d
