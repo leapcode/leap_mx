@@ -33,7 +33,7 @@ case "$1" in
                           --rundir=$RUNDIR \
                           --python=$FILE \
                           --logfile=$LOGFILE \
-                          --syslog --prefix=leap-mx
+                          --prefix=leap-mx
         echo "."
     ;;
 
