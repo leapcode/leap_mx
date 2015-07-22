@@ -22,6 +22,22 @@ import re
 import sys
 
 
+def is_develop_mode():
+    """
+    Returns True if we're calling the setup script using the argument for
+    setuptools development mode.
+
+    This avoids messing up with dependency pinning and order, the
+    responsibility of installing the leap dependencies is left to the
+    developer.
+    """
+    args = sys.argv
+    devflags = "setup.py", "develop"
+    if (args[0], args[1]) == devflags:
+        return True
+    return False
+
+
 def get_reqs_from_files(reqfiles):
     """
     Returns the contents of the top requirement file listed as a
