@@ -68,12 +68,15 @@ cdb = couchdbhelper.ConnectedCouchDB(server,
 application = service.Application("LEAP MX")
 
 # Alias map
-alias_map = internet.TCPServer(alias_port, AliasResolverFactory(couchdb=cdb))
+alias_map = internet.TCPServer(
+    alias_port, AliasResolverFactory(couchdb=cdb),
+    interface="localhost")
 alias_map.setServiceParent(application)
 
 # Check recipient access
-check_recipient = internet.TCPServer(check_recipient_port,
-                                     CheckRecipientAccessFactory(couchdb=cdb))
+check_recipient = internet.TCPServer(
+    check_recipient_port, CheckRecipientAccessFactory(couchdb=cdb),
+    interface="localhost")
 check_recipient.setServiceParent(application)
 
 # Mail receiver
