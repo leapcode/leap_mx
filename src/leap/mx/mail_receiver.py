@@ -203,16 +203,6 @@ class MailReceiver(Service):
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
-
-            # add X-Leap-Provenance header if message is not encrypted
-            if message.get_content_type() != 'multipart/encrypted' and \
-                    '-----BEGIN PGP MESSAGE-----' not in \
-                    message_as_string:
-                message.add_header(
-                    'X-Leap-Provenance',
-                    email.utils.formatdate(),
-                    pubkey=key["keyid"])
-                data = {'incoming': True, 'content': message.as_string()}
             doc.content = {
                 self.INCOMING_KEY: True,
                 self.ERROR_DECRYPTING_KEY: False,
