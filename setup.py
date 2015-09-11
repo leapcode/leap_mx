@@ -152,7 +152,9 @@ setup(
     namespace_packages=["leap"],
     package_dir={'': 'src'},
     packages=find_packages('src'),
-    # test_suite='leap.mx.tests',
+    test_suite='leap.mx.tests',
+    tests_require=parse_requirements(
+        reqfiles=['pkg/requirements-testing.pip']),
     install_requires=requirements,
     classifiers=trove_classifiers,
     data_files=data_files

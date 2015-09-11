@@ -80,10 +80,6 @@ check_recipient = internet.TCPServer(
 check_recipient.setServiceParent(application)
 
 # Mail receiver
-mail_couch_url_prefix = "http://%s:%s@%s:%s" % (user,
-                                                password,
-                                                server,
-                                                port)
 directories = []
 for section in config.sections():
     if section in ("couchdb", "alias map", "check recipient", "bounce"):
@@ -92,6 +88,5 @@ for section in config.sections():
     recursive = config.getboolean(section, "recursive")
     directories.append([to_watch, recursive])
 
-mr = MailReceiver(mail_couch_url_prefix, cdb, directories, bounce_from,
-                  bounce_subject)
+mr = MailReceiver(cdb, directories, bounce_from, bounce_subject)
 mr.setServiceParent(application)
