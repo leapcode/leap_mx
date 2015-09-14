@@ -65,7 +65,7 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
         elif pubkey is None:
             self.sendCode(
                 TCP_MAP_CODE_TEMPORARY_FAILURE,
-                postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
+                postfix.quote("4.7.13 NO PUBKEY FOUND"))
         else:
             self.sendCode(
                 TCP_MAP_CODE_SUCCESS,
