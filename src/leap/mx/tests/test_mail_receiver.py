@@ -37,6 +37,7 @@ from leap.mx.mail_receiver import MailReceiver
 BOUNCE_ADDRESS = "bounce@leap.se"
 BOUNCE_SUBJECT = "bounce subject"
 ADDRESS = "leap@leap.se"
+UUID = "13d5203bdd09be1e638bdb1d315251cb"
 
 
 class MailReceiverTestCase(unittest.TestCase):
@@ -78,8 +79,7 @@ class MailReceiverTestCase(unittest.TestCase):
     def test_single_mail(self):
         msg, path = self.addMail("foo bar")
         uuid, doc = yield self.defer_put_doc
-        orig_uuid = ADDRESS.split('@')[0]
-        self.assertEqual(uuid, orig_uuid)
+        self.assertEqual(uuid, UUID)
         decmsg = self.decryptDoc(doc)
         self.assertEqual(msg, decmsg)
         self.assertFalse(os.path.exists(path))
@@ -101,7 +101,8 @@ class MailReceiverTestCase(unittest.TestCase):
                 frm="someone@domain.org", subject="sent subject"):
         msg = Message()
         msg.add_header("To", to)
-        msg.add_header("Delivered-To", to)
+        msg.add_header(
+            "Delivered-To", UUID + "@deliver.local")
         msg.add_header("From", frm)
         msg.add_header("Subject", subject)
         msg.set_payload(body)

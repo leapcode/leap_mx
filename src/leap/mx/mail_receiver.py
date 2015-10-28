@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # mail_receiver.py
-# Copyright (C) 2013 LEAP
+# Copyright (C) 2013, 2015 LEAP
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -269,7 +269,7 @@ class MailReceiver(Service):
             return None
         final_address = delivereds.pop(0)
         _, addr = email.utils.parseaddr(final_address)
-        uuid, _ = addr.split("@")
+        uuid = addr.split("@")[0]
         return uuid
 
     @defer.inlineCallbacks
