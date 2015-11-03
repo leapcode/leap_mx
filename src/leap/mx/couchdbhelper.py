@@ -52,10 +52,10 @@ class ConnectedCouchDB(client.CouchDB):
         :param str password: (optional) The password for authorization.
         :type password: str
         """
-        self.mail_couch_url = "http://%s:%s@%s:%s" % (username,
-                                                      password,
-                                                      host,
-                                                      port)
+        self._mail_couch_url = "http://%s:%s@%s:%s" % (username,
+                                                       password,
+                                                       host,
+                                                       port)
         client.CouchDB.__init__(self,
                                 host,
                                 port=port,
@@ -156,8 +156,9 @@ class ConnectedCouchDB(client.CouchDB):
                  which fails with CouchDBError if there was any error.
         """
         # TODO: that should be implemented with paisley
+        url = self._mail_couch_url + "/user-%s" % (uuid,)
         try:
-            db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
+            db = CouchDatabase.open_database(url, create=False)
             return defer.succeed(db.put_doc(doc))
         except Exception as e:
             return defer.fail(CouchDBError(e.message))

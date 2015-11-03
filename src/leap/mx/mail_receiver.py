@@ -51,7 +51,7 @@ from zope.interface import implements
 from leap.soledad.common.crypto import EncryptionSchemes
 from leap.soledad.common.crypto import ENC_JSON_KEY
 from leap.soledad.common.crypto import ENC_SCHEME_KEY
-from leap.soledad.common.couch import CouchDocument
+from leap.soledad.common.document import ServerDocument
 
 from leap.keymanager import openpgp
 
@@ -170,7 +170,7 @@ class MailReceiver(Service):
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
-        :rtype: CouchDocument
+        :rtype: ServerDocument
         """
         if pubkey is None or len(pubkey) == 0:
             log.msg("_encrypt_message: Something went wrong, here's all "
@@ -180,7 +180,7 @@ class MailReceiver(Service):
         # find message's encoding
         message_as_string = message.as_string()
 
-        doc = CouchDocument(doc_id=str(pyuuid.uuid4()))
+        doc = ServerDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
         data = {'incoming': True, 'content': message_as_string}
@@ -213,14 +213,14 @@ class MailReceiver(Service):
     @defer.inlineCallbacks
     def _export_message(self, uuid, doc):
         """
-        Given a UUID and a CouchDocument, it saves it directly in the
+        Given a UUID and a ServerDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
         accessible to the recipient of the mail.
 
         :param uuid: the mail owner's uuid
         :type uuid: str
-        :param doc: CouchDocument that represents the email
-        :type doc: CouchDocument
+        :param doc: ServerDocument that represents the email
+        :type doc: ServerDocument
 
         :return: A Deferred which fires if it's ok to remove the message,
                  or fails otherwise
