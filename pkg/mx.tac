@@ -24,6 +24,7 @@ from leap.mx import couchdbhelper
 from leap.mx.mail_receiver import MailReceiver
 from leap.mx.alias_resolver import AliasResolverFactory
 from leap.mx.check_recipient_access import CheckRecipientAccessFactory
+from leap.mx.fingerprint_resolver import FingerprintResolverFactory
 
 try:
     from twisted.application import service, internet
@@ -57,6 +58,7 @@ except ConfigParser.NoSectionError:
 
 alias_port = config.getint("alias map", "port")
 check_recipient_port = config.getint("check recipient", "port")
+fingerprint_port = config.getint("fingerprint map", "port")
 
 cdb = couchdbhelper.ConnectedCouchDB(server,
                                      port=port,
@@ -78,6 +80,12 @@ check_recipient = internet.TCPServer(
     check_recipient_port, CheckRecipientAccessFactory(couchdb=cdb),
     interface="localhost")
 check_recipient.setServiceParent(application)
+
+# Fingerprint map
+fingerprint_map = internet.TCPServer(
+    fingerprint_port, FingerprintResolverFactory(couchdb=cdb),
+    interface="localhost")
+fingerprint_map.setServiceParent(application)
 
 # Mail receiver
 directories = []
