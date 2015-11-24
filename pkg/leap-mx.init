@@ -14,6 +14,8 @@ PIDFILE=/var/run/leap_mx.pid
 RUNDIR=/var/lib/leap_mx/
 FILE=/usr/share/app/leap_mx.tac
 TWISTD_PATH=/usr/bin/twistd
+USER=leap-mx
+GROUP=leap-mx
 
 [ -r /etc/default/leap_mx ] && . /etc/default/leap_mx
 
@@ -32,7 +34,9 @@ case "$1" in
                           --rundir=$RUNDIR \
                           --python=$FILE \
                           --syslog \
-                          --prefix=leap-mx
+                          --prefix=leap-mx \
+                          --uid=$USER \
+                          --gid=$GROUP
         echo "."
     ;;
 
