@@ -43,7 +43,6 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
     are looked up by the factory, and will return a permanent or a temporary
     failure in case either the user or the key don't exist, respectivelly.
     """
-
     def _cbGot(self, value):
         """
         Return a code and message depending on the result of the factory's
@@ -85,4 +84,3 @@ class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
     @property
     def _query_message(self):
         return "check recipient access"
-

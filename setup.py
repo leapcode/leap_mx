@@ -20,14 +20,15 @@ setup file for leap.mx
 import os
 import re
 from setuptools import setup, find_packages
+from setuptools import Command
+
+from pkg.utils.reqs import parse_requirements, is_develop_mode
 
 import versioneer
 versioneer.versionfile_source = 'src/leap/mx/_version.py'
 versioneer.versionfile_build = 'leap/mx/_version.py'
 versioneer.tag_prefix = ''  # tags are like 1.2.0
 versioneer.parentdir_prefix = 'leap.mx-'
-
-from pkg.utils.reqs import parse_requirements, is_develop_mode
 
 trove_classifiers = [
     'Development Status :: 3 - Alpha',
@@ -58,9 +59,6 @@ if len(_version_short) > 0:
     DOWNLOAD_URL = DOWNLOAD_BASE % VERSION_SHORT
 
 cmdclass = versioneer.get_cmdclass()
-
-
-from setuptools import Command
 
 
 class freeze_debianver(Command):

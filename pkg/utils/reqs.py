@@ -67,8 +67,8 @@ def parse_requirements(reqfiles=['requirements.txt',
         if re.match(r'\s*-e\s+', line):
             pass
             # do not try to do anything with externals on vcs
-            #requirements.append(re.sub(r'\s*-e\s+.*#egg=(.*)$', r'\1',
-                                #line))
+            # requirements.append(re.sub(r'\s*-e\s+.*#egg=(.*)$', r'\1',
+            #                     line))
         # http://foo.bar/baz/foobar/zipball/master#egg=foobar
         elif re.match(r'\s*https?:', line):
             requirements.append(re.sub(r'\s*https?:.*#egg=(.*)$', r'\1',
