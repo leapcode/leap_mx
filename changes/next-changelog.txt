@@ -17,6 +17,7 @@ Features
 
 Bugfixes
 ~~~~~~~~
+- `#7253 <https://leap.se/code/issues/7253>`_: Use the original message for encryption.
 - `#1235 <https://leap.se/code/issues/1235>`_: Description for the fixed stuff corresponding with issue #1235.
 - Bugfix without related issue number.
 

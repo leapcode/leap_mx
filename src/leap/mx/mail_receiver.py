@@ -166,7 +166,7 @@ class MailReceiver(Service):
         :param pubkey: public key for the owner of the message
         :type pubkey: str
         :param message: message contents
-        :type message: email.message.Message
+        :type message: str
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
@@ -177,13 +177,10 @@ class MailReceiver(Service):
                     "I know: %r" % (pubkey,))
             return None
 
-        # find message's encoding
-        message_as_string = message.as_string()
-
         doc = ServerDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
-        data = {'incoming': True, 'content': message_as_string}
+        data = {'incoming': True, 'content': message}
         if pubkey is None or len(pubkey) == 0:
             doc.content = {
                 self.INCOMING_KEY: True,
@@ -385,7 +382,7 @@ class MailReceiver(Service):
                 defer.returnValue(None)
 
             log.msg("Encrypting message to %s's pubkey" % (uuid,))
-            doc = yield self._encrypt_message(pubkey, msg)
+            doc = yield self._encrypt_message(pubkey, mail_data)
 
             yield self._export_message(uuid, doc)
             yield self._remove(filepath)
