@@ -145,6 +145,18 @@ virtual transport instead, we should append the domain (eg
 123456@example.org). see
 http://www.postfix.org/ADDRESS_REWRITING_README.html#resolve
 
+#### Return values
+
+The return codes and content of the tcp maps are:
+
+                 +----------------------------------------------------------+
+                 | virtual_alias_map   | check_recipient_access             |
++----------------+---------------------+------------------------------------+
+| user not found | 500 "NOT FOUND SRY" | 500 "REJECT"                       |
+| key not found  | 200 "<uuid>"        | 400 "4.7.13 USER ACCOUNT DISABLED" |
+| both found     | 200 "<uuid>"        | 200 "OK"                           |
++----------------+---------------------+------------------------------------+
+
 
 ### Current status
 
