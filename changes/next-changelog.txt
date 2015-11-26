@@ -21,6 +21,7 @@ Bugfixes
 
 Misc
 ~~~~
+- `#7271 <https://leap.se/code/issues/7271>`_: Document the return codes of the TCP maps.
 - `#1236 <https://leap.se/code/issues/1236>`_: Description of the new feature corresponding with issue #1236.
 - Some change without issue number.
 
