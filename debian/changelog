@@ -1,3 +1,9 @@
+leap-mx (0.8.0~alpha) unstable; urgency=medium
+
+  * Update to pre-0.8.0 version
+
+ -- Ben Carrillo <ben@futeisha.org>  Wed, 02 Dec 2015 14:51:40 -0400
+
 leap-mx (0.7.0) unstable; urgency=medium
 
   * Update to 0.7.0 version
