@@ -23,7 +23,9 @@ maps, user UUIDs, and GPG keyIDs.
 
 
 from paisley import client
+from twisted.internet import defer
 from twisted.python import log
+from leap.soledad.common.couch import CouchDatabase
 
 
 class ConnectedCouchDB(client.CouchDB):
@@ -50,6 +52,10 @@ class ConnectedCouchDB(client.CouchDB):
         :param str password: (optional) The password for authorization.
         :type password: str
         """
+        self._mail_couch_url = "http://%s:%s@%s:%s" % (username,
+                                                       password,
+                                                       host,
+                                                       port)
         client.CouchDB.__init__(self,
                                 host,
                                 port=port,
@@ -131,3 +137,32 @@ class ConnectedCouchDB(client.CouchDB):
 
         d.addCallbacks(_get_pubkey_cbk, log.err)
         return d
+
+    def put_doc(self, uuid, doc):
+        """
+        Update a document.
+
+        If the document currently has conflicts, put will fail.
+        If the database specifies a maximum document size and the document
+        exceeds it, put will fail and raise a DocumentTooBig exception.
+
+        :param uuid: The uuid of a user
+        :type uuid: str
+        :param doc: A Document with new content.
+        :type doc: leap.soledad.common.couch.CouchDocument
+
+        :return: A deferred which fires with the new revision identifier for
+                 the document if the Document object has being updated, or
+                 which fails with CouchDBError if there was any error.
+        """
+        # TODO: that should be implemented with paisley
+        url = self._mail_couch_url + "/user-%s" % (uuid,)
+        try:
+            db = CouchDatabase.open_database(url, create=False)
+            return defer.succeed(db.put_doc(doc))
+        except Exception as e:
+            return defer.fail(CouchDBError(e.message))
+
+
+class CouchDBError(Exception):
+    pass

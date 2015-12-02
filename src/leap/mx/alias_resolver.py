@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # alias_resolver.py
-# Copyright (C) 2013 LEAP
+# Copyright (C) 2013, 2015 LEAP
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ class LEAPPostfixTCPMapAliasServer(postfix.PostfixTCPMapServer):
                 TCP_MAP_CODE_PERMANENT_FAILURE,
                 postfix.quote("NOT FOUND SRY"))
         else:
+            uuid += "@deliver.local"
             # properly encode uuid, otherwise twisted complains when replying
             if isinstance(uuid, unicode):
                 uuid = uuid.encode("utf8")

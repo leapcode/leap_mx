@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # mail_receiver.py
-# Copyright (C) 2013 LEAP
+# Copyright (C) 2013, 2015 LEAP
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ from zope.interface import implements
 from leap.soledad.common.crypto import EncryptionSchemes
 from leap.soledad.common.crypto import ENC_JSON_KEY
 from leap.soledad.common.crypto import ENC_SCHEME_KEY
-from leap.soledad.common.couch import CouchDatabase, CouchDocument
+from leap.soledad.common.document import ServerDocument
 
 from leap.keymanager import openpgp
 
@@ -75,14 +75,10 @@ class MailReceiver(Service):
     """
     RETRY_DIR_WATCH_DELAY = 60 * 5  # 5 minutes
 
-    def __init__(self, mail_couch_url, users_cdb, directories, bounce_from,
+    def __init__(self, users_cdb, directories, bounce_from,
                  bounce_subject):
         """
         Constructor
-
-        :param mail_couch_url: URL prefix for the couchdb where mail
-        should be stored
-        :type mail_couch_url: str
 
         :param users_cdb: CouchDB instance from where to get the uuid
                           and pubkey for a user
@@ -98,7 +94,6 @@ class MailReceiver(Service):
         :type bounce_subject: str
         """
         # IService doesn't define an __init__
-        self._mail_couch_url = mail_couch_url
         self._users_cdb = users_cdb
         self._directories = directories
         self._bounce_from = bounce_from
@@ -175,7 +170,7 @@ class MailReceiver(Service):
 
         :return: doc to sync with Soledad or None, None if something
                  went wrong.
-        :rtype: CouchDocument
+        :rtype: ServerDocument
         """
         if pubkey is None or len(pubkey) == 0:
             log.msg("_encrypt_message: Something went wrong, here's all "
@@ -185,7 +180,7 @@ class MailReceiver(Service):
         # find message's encoding
         message_as_string = message.as_string()
 
-        doc = CouchDocument(doc_id=str(pyuuid.uuid4()))
+        doc = ServerDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
         data = {'incoming': True, 'content': message_as_string}
@@ -203,16 +198,6 @@ class MailReceiver(Service):
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
-
-            # add X-Leap-Provenance header if message is not encrypted
-            if message.get_content_type() != 'multipart/encrypted' and \
-                    '-----BEGIN PGP MESSAGE-----' not in \
-                    message_as_string:
-                message.add_header(
-                    'X-Leap-Provenance',
-                    email.utils.formatdate(),
-                    pubkey=key["keyid"])
-                data = {'incoming': True, 'content': message.as_string()}
             doc.content = {
                 self.INCOMING_KEY: True,
                 self.ERROR_DECRYPTING_KEY: False,
@@ -225,55 +210,44 @@ class MailReceiver(Service):
 
         return doc
 
+    @defer.inlineCallbacks
     def _export_message(self, uuid, doc):
         """
-        Given a UUID and a CouchDocument, it saves it directly in the
+        Given a UUID and a ServerDocument, it saves it directly in the
         couchdb that serves as a backend for Soledad, in a db
         accessible to the recipient of the mail.
 
         :param uuid: the mail owner's uuid
         :type uuid: str
-        :param doc: CouchDocument that represents the email
-        :type doc: CouchDocument
+        :param doc: ServerDocument that represents the email
+        :type doc: ServerDocument
 
-        :return: True if it's ok to remove the message, False
-                 otherwise
-        :rtype: bool
+        :return: A Deferred which fires if it's ok to remove the message,
+                 or fails otherwise
+        :rtype: Deferred
         """
         if uuid is None or doc is None:
             log.msg("_export_message: Something went wrong, here's all "
                     "I know: %r | %r" % (uuid, doc))
-            return False
+            raise Exception("No uuid or doc")
 
         log.msg("Exporting message for %s" % (uuid,))
-
-        db = CouchDatabase(self._mail_couch_url, "user-%s" % (uuid,))
-        db.put_doc(doc)
-
+        yield self._users_cdb.put_doc(uuid, doc)
         log.msg("Done exporting")
 
-        return True
-
-    def _conditional_remove(self, do_remove, filepath):
+    def _remove(self, filepath):
         """
-        Removes the message if do_remove is True.
+        Removes the message.
 
-        :param do_remove: True if the message should be removed, False
-                          otherwise
-        :type do_remove: bool
         :param filepath: path to the mail
         :type filepath: twisted.python.filepath.FilePath
         """
-        if do_remove:
-            # remove the original mail
-            try:
-                log.msg("Removing %r" % (filepath.path,))
-                filepath.remove()
-                log.msg("Done removing")
-            except Exception:
-                log.err()
-        else:
-            log.msg("Not removing %r" % (filepath.path,))
+        try:
+            log.msg("Removing %r" % (filepath.path,))
+            filepath.remove()
+            log.msg("Done removing")
+        except Exception:
+            log.err()
 
     def _get_owner(self, mail):
         """
@@ -295,7 +269,7 @@ class MailReceiver(Service):
             return None
         final_address = delivereds.pop(0)
         _, addr = email.utils.parseaddr(final_address)
-        uuid, _ = addr.split("@")
+        uuid = addr.split("@")[0]
         return uuid
 
     @defer.inlineCallbacks
@@ -317,7 +291,7 @@ class MailReceiver(Service):
         except InvalidReturnPathError:
             # give up bouncing this message!
             log.msg("Will not bounce message because of invalid return path.")
-        yield self._conditional_remove(True, filepath)
+        yield self._remove(filepath)
 
     def sleep(self, secs):
         """
@@ -413,8 +387,8 @@ class MailReceiver(Service):
             log.msg("Encrypting message to %s's pubkey" % (uuid,))
             doc = yield self._encrypt_message(pubkey, msg)
 
-            do_remove = yield self._export_message(uuid, doc)
-            yield self._conditional_remove(do_remove, filepath)
+            yield self._export_message(uuid, doc)
+            yield self._remove(filepath)
 
     @defer.inlineCallbacks
     def _process_incoming_email(self, otherself, filepath, mask):
@@ -440,4 +414,3 @@ class MailReceiver(Service):
         except Exception as e:
             log.msg("Something went wrong while processing {0!r}: {1!r}"
                     .format(filepath, e))
-            log.err()

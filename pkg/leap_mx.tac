@@ -68,19 +68,18 @@ cdb = couchdbhelper.ConnectedCouchDB(server,
 application = service.Application("LEAP MX")
 
 # Alias map
-alias_map = internet.TCPServer(alias_port, AliasResolverFactory(couchdb=cdb))
+alias_map = internet.TCPServer(
+    alias_port, AliasResolverFactory(couchdb=cdb),
+    interface="localhost")
 alias_map.setServiceParent(application)
 
 # Check recipient access
-check_recipient = internet.TCPServer(check_recipient_port,
-                                     CheckRecipientAccessFactory(couchdb=cdb))
+check_recipient = internet.TCPServer(
+    check_recipient_port, CheckRecipientAccessFactory(couchdb=cdb),
+    interface="localhost")
 check_recipient.setServiceParent(application)
 
 # Mail receiver
-mail_couch_url_prefix = "http://%s:%s@%s:%s" % (user,
-                                                password,
-                                                server,
-                                                port)
 directories = []
 for section in config.sections():
     if section in ("couchdb", "alias map", "check recipient", "bounce"):
@@ -89,6 +88,5 @@ for section in config.sections():
     recursive = config.getboolean(section, "recursive")
     directories.append([to_watch, recursive])
 
-mr = MailReceiver(mail_couch_url_prefix, cdb, directories, bounce_from,
-                  bounce_subject)
+mr = MailReceiver(cdb, directories, bounce_from, bounce_subject)
 mr.setServiceParent(application)

@@ -59,3 +59,4 @@ debian/leap-mx.postrm.debhelper
 debian/leap-mx.prerm.debhelper
 debian/leap-mx.substvars
 debian/leap-mx/
+_trial_temp

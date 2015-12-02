@@ -7,9 +7,3 @@ paisley>=0.3.1
 # in soledad-common, but we need to declare here
 # for the time being.
 couchdb
-
-leap.common>=0.3.7
-leap.soledad.common>=0.5.0
-leap.keymanager>=0.3.8
-
-chardet  # we fallback to chardet if cchardet is not available, but it's preferred

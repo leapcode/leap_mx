@@ -41,7 +41,6 @@ class LEAPPostfixTCPMapServerFactory(ServerFactory, object):
 
     __metaclass__ = ABCMeta
 
-
     def __init__(self, couchdb):
         """
         Initialize the factory.
