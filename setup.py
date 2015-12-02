@@ -111,7 +111,7 @@ else:
     # be automatically
     # placed by distutils, using whatever interpreter is
     # available.
-    data_files = [("/usr/local/bin/", ["pkg/mx.tac"])]
+    data_files = [("/usr/share/app/", ["pkg/mx.tac"])]
 
 
 requirements = parse_requirements()
