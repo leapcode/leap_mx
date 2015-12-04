@@ -82,7 +82,8 @@ check_recipient.setServiceParent(application)
 # Mail receiver
 directories = []
 for section in config.sections():
-    if section in ("couchdb", "alias map", "check recipient", "bounce"):
+    if section in ("couchdb", "alias map", "check recipient",
+     		   "fingerprint map", "bounce"):
         continue
     to_watch = config.get(section, "path")
     recursive = config.getboolean(section, "recursive")
