@@ -12,7 +12,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 PIDFILE=/var/run/leap_mx.pid
 RUNDIR=/var/lib/leap_mx/
-FILE=/usr/share/app/leap_mx.tac
+FILE=/usr/share/app/mx.tac
 TWISTD_PATH=/usr/bin/twistd
 USER=leap-mx
 GROUP=leap-mx
