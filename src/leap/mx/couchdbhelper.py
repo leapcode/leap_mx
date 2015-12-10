@@ -138,6 +138,34 @@ class ConnectedCouchDB(client.CouchDB):
         d.addCallbacks(_get_pubkey_cbk, log.err)
         return d
 
+    def getCertExpiry(self, fingerprint):
+        """
+        Query couch and return a deferred that will fire with the expiration
+        date for the cert with the given fingerprint.
+
+        :param fingerprint: The cert fingerprint
+        :type fingerprint: str
+
+        :return: A deferred that will fire with the cert expiration date as a
+                 str.
+        :rtype: Deferred
+        """
+        d = self.openView(docId="Identity",
+                          viewId="cert_expiry_by_fingerprint/",
+                          key=fingerprint,
+                          reduce=False,
+                          include_docs=True)
+
+        def _get_cert_expiry_cbk(result):
+            try:
+                expiry = result["rows"][0]["value"]
+            except (KeyError, IndexError):
+                expiry = None
+            return expiry
+
+        d.addCallback(_get_cert_expiry_cbk)
+        return d
+
     def put_doc(self, uuid, doc):
         """
         Update a document.

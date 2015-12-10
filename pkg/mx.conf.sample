@@ -14,6 +14,9 @@ port=4242
 [check recipient]
 port=2244
 
+[fingerprint map]
+port=2424
+
 [bounce]
 from=<address for the From: of the bounce email without domain>
 subject=Delivery failure

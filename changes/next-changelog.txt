@@ -10,12 +10,14 @@ I've added a new category `Misc` so we can track doc/style/packaging stuff.
 
 Features
 ~~~~~~~~
+- `#4285 <https://leap.se/code/issues/4285>`_: Add postfix lookup against couchdb for client smtp fingerprint
 - `#5959 <https://leap.se/code/issues/5959>`_: Make alias resolver to return *uuid@deliver.local*
 - `#1234 <https://leap.se/code/issues/1234>`_: Description of the new feature corresponding with issue #1234.
 - New feature without related issue number.
 
 Bugfixes
 ~~~~~~~~
+- `#7253 <https://leap.se/code/issues/7253>`_: Use the original message for encryption.
 - `#1235 <https://leap.se/code/issues/1235>`_: Description for the fixed stuff corresponding with issue #1235.
 - Bugfix without related issue number.
 

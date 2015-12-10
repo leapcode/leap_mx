@@ -19,6 +19,7 @@
 MailReceiver tests
 """
 
+import codecs
 import json
 import os
 import os.path
@@ -97,14 +98,27 @@ class MailReceiverTestCase(unittest.TestCase):
         yield defer_called
         self.assertTrue(os.path.exists(path))
 
+    @defer.inlineCallbacks
+    def test_misleading_encoding(self):
+        msg, path = self.addMail(
+            "ñáûä", headers={'Content-Transfer-Encoding': '7Bit'})
+        uuid, doc = yield self.defer_put_doc
+        self.assertEqual(uuid, UUID)
+        decmsg = self.decryptDoc(doc)
+        self.assertEqual(unicode(msg, "utf-8"), decmsg)
+        self.assertFalse(os.path.exists(path))
+
     def addMail(self, body="", filename="foo", to=ADDRESS,
-                frm="someone@domain.org", subject="sent subject"):
+                frm="someone@domain.org", subject="sent subject",
+                headers={}):
         msg = Message()
         msg.add_header("To", to)
         msg.add_header(
             "Delivered-To", UUID + "@deliver.local")
         msg.add_header("From", frm)
         msg.add_header("Subject", subject)
+        for header, value in headers.iteritems():
+            msg.add_header(header, value)
         msg.set_payload(body)
 
         path = os.path.join(self.directory, "new", filename)

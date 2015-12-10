@@ -145,6 +145,19 @@ virtual transport instead, we should append the domain (eg
 123456@example.org). see
 http://www.postfix.org/ADDRESS_REWRITING_README.html#resolve
 
+#### fingerprint_resolver
+
+postfix config:
+
+```
+virtual_alias_map tcp:localhost:2424
+```
+
+postfix sends "get 12:34:56:78:90:ab:cd:ef:12:34:56:78:90:ab:cd:ef:12:34:56:78"
+providing an smtp fingerprint and fingerprint_resolver returns "200 2016-01-19",
+where 2016-01-19 is the expiration date of the given fingerprint. If the
+fingerprint does not exists or is expired it will return "500 NOT FOUND SRY".
+
 #### Return values
 
 The return codes and content of the tcp maps are:
