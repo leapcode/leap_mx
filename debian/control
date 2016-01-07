@@ -3,7 +3,7 @@ Maintainer: drebs <drebs@leap.se>
 Uploader: Micah Anderson <micah@debian.org>
 Section: python
 Priority: optional
-Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 9)
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 9), dh-systemd
 Standards-Version: 3.9.6
 
 Package: leap-mx
