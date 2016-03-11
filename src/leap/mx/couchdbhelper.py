@@ -100,9 +100,10 @@ class ConnectedCouchDB(client.CouchDB):
             pubkey = None
             if result["rows"]:
                 doc = result["rows"][0]["doc"]
-                uuid = doc["user_id"]
-                if "keys" in doc:
-                    pubkey = doc["keys"]["pgp"]
+                if doc["enabled"]:
+                    uuid = doc["user_id"]
+                    if "keys" in doc:
+                        pubkey = doc["keys"]["pgp"]
             return uuid, pubkey
 
         d.addCallback(_get_uuid_and_pubkey_cbk)
