@@ -366,10 +366,6 @@ class MailReceiver(Service):
                 defer.returnValue(None)
             log.msg("Mail owner: %s" % (uuid,))
 
-            if uuid is None:
-                log.msg("BUG: There was no uuid!")
-                defer.returnValue(None)
-
             pubkey = yield self._users_cdb.getPubkey(uuid)
             if pubkey is None or len(pubkey) == 0:
                 log.msg(
