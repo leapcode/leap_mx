@@ -12,6 +12,8 @@ Features
 ~~~~~~~~
 - `#4285 <https://leap.se/code/issues/4285>`_: Add postfix lookup against couchdb for client smtp fingerprint
 - `#5959 <https://leap.se/code/issues/5959>`_: Make alias resolver to return *uuid@deliver.local*
+- `#7998 <https://leap.se/code/issues/7998>`_: Bounce stalled emails after a timeout.
+
 - `#1234 <https://leap.se/code/issues/1234>`_: Description of the new feature corresponding with issue #1234.
 - New feature without related issue number.
 
