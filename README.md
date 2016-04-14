@@ -33,6 +33,14 @@ $ python setup.py install
 $ twistd -ny pkg/mx.tac
 ~~~
 
+### Stalled emails
+
+In case of problems with couchdb and other unknown sources emails can get
+stalled in the spool. There is a bouncing mechanism for long stalled emails,
+after 5 days the email will get bounced. The timestamp of stalled emails is
+hold in memory, restarting leap-mx will erase all timestamps and the stalled
+timeout will be reset.
+
 ## Hacking
 
 Please see the doc/DESIGN docs.

@@ -40,6 +40,7 @@ import signal
 import json
 import email.utils
 
+from datetime import datetime, timedelta
 from email import message_from_string
 
 from twisted.application.service import Service, IService
@@ -75,6 +76,11 @@ class MailReceiver(Service):
     """
     RETRY_DIR_WATCH_DELAY = 60 * 5  # 5 minutes
 
+    """
+    Time delta to keep stalled emails
+    """
+    MAX_BOUNCE_DELTA = timedelta(days=5)
+
     def __init__(self, users_cdb, directories, bounce_from,
                  bounce_subject):
         """
@@ -98,6 +104,7 @@ class MailReceiver(Service):
         self._directories = directories
         self._bounce_from = bounce_from
         self._bounce_subject = bounce_subject
+        self._bounce_timestamp = {}
         self._processing_skipped = False
 
     def startService(self):
@@ -366,10 +373,6 @@ class MailReceiver(Service):
                 defer.returnValue(None)
             log.msg("Mail owner: %s" % (uuid,))
 
-            if uuid is None:
-                log.msg("BUG: There was no uuid!")
-                defer.returnValue(None)
-
             pubkey = yield self._users_cdb.getPubkey(uuid)
             if pubkey is None or len(pubkey) == 0:
                 log.msg(
@@ -382,10 +385,31 @@ class MailReceiver(Service):
                 defer.returnValue(None)
 
             log.msg("Encrypting message to %s's pubkey" % (uuid,))
-            doc = yield self._encrypt_message(pubkey, mail_data)
+            try:
+                doc = yield self._encrypt_message(pubkey, mail_data)
 
-            yield self._export_message(uuid, doc)
-            yield self._remove(filepath)
+                yield self._export_message(uuid, doc)
+                yield self._remove(filepath)
+            except Exception as e:
+                yield self._bounce_with_timeout(filepath, msg, e)
+
+    @defer.inlineCallbacks
+    def _bounce_with_timeout(self, filepath, msg, error):
+        if filepath not in self._bounce_timestamp:
+            self._bounce_timestamp[filepath] = datetime.now()
+            log.msg("New stalled email {0!r}: {1!r}".format(filepath, error))
+            defer.returnValue(None)
+
+        current_delta = datetime.now() - self._bounce_timestamp[filepath]
+        if current_delta > self.MAX_BOUNCE_DELTA:
+            log.msg("Bouncing stalled email {0!r}: {1!r}"
+                    .format(filepath, error))
+            bounce_reason = "There was a problem in the server and the " \
+                            "email could not be delivered."
+            yield self._bounce_message(msg, filepath, bounce_reason)
+        else:
+            log.msg("Still stalled email {0!r} for the last {1}: {2!r}"
+                    .format(filepath, str(current_delta), error))
 
     @defer.inlineCallbacks
     def _process_incoming_email(self, otherself, filepath, mask):
