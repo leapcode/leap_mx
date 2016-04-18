@@ -43,7 +43,6 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
     are looked up by the factory, and will return a permanent or a temporary
     failure in case either the user or the key don't exist, respectivelly.
     """
-
     def _cbGot(self, value):
         """
         Return a code and message depending on the result of the factory's
@@ -65,7 +64,7 @@ class LEAPPostFixTCPMapAccessServer(postfix.PostfixTCPMapServer):
         elif pubkey is None:
             self.sendCode(
                 TCP_MAP_CODE_TEMPORARY_FAILURE,
-                postfix.quote("4.7.13 USER ACCOUNT DISABLED"))
+                postfix.quote("4.7.13 NO PUBKEY FOUND"))
         else:
             self.sendCode(
                 TCP_MAP_CODE_SUCCESS,
@@ -85,4 +84,3 @@ class CheckRecipientAccessFactory(LEAPPostfixTCPMapServerFactory):
     @property
     def _query_message(self):
         return "check recipient access"
-

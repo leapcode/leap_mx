@@ -9,6 +9,7 @@
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -51,3 +52,5 @@ nosetests.xml
 *.log
 *.conf
 *.config
+
+_trial_temp
