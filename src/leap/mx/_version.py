@@ -4,7 +4,7 @@
 # unpacked source archive. Distribution tarballs contain a pre-generated copy
 # of this file.
 
-version_version = '0.8.0.alpha3'
+version_version = '0.8.0'
 full_revisionid = '1338cf1757ac1f3a4f44d8eb0bd7e3a57f92d5c8'
 
 
