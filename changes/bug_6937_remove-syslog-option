@@ -1,2 +1,0 @@
-  o Remove logging to syslog for now. We should only do this in the future,
-    when the platform is ready for it. Closes #6937.
