@@ -1,1 +1,0 @@
-- return a more meaningful msg if user exists but has no key (Closes: #7272)

@@ -1,3 +1,10 @@
+0.8.1 - 13 May, 2016 
++++++++++++++++++++++++++++++++
+
+Bugfixes
+~~~~~~~~
+- `#7961 <https://leap.se/code/issues/7961>`_: Deleted account crashes leap-mx
+
 0.8.0 - 18 Apr, 2016 
 +++++++++++++++++++++++++++++++
 
