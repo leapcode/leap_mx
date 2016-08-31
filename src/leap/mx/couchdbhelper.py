@@ -100,7 +100,8 @@ class ConnectedCouchDB(client.CouchDB):
             pubkey = None
             if result["rows"]:
                 doc = result["rows"][0]["doc"]
-                if "enabled" not in doc or doc["enabled"]:
+                user_enabled = doc.get('enabled', True)
+                if user_enabled:
                     uuid = doc["user_id"]
                     if "keys" in doc:
                         pubkey = doc["keys"]["pgp"]
