@@ -1,8 +1,9 @@
-leap-mx (0.9.0~pre) UNRELEASED; urgency=medium
+leap-mx (0.9.1) unstable; urgency=medium
 
-  * Update to pre-0.9 release 
+  * Update to 0.9.1 release 
+  * Update to systemd file. 
 
- -- Ben Carrillo <ben@futeisha.org>  Wed, 31 Aug 2016 10:32:55 -0400
+ -- Ben Carrillo <ben@futeisha.org>  Tue, 17 Jan 2017 21:46:02 +0100
 
 leap-mx (0.8.1) unstable; urgency=medium
 
