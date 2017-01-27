@@ -204,13 +204,13 @@ class MailReceiver(Service):
             key = gpg.list_keys().pop()
 
             encryption_result = gpg.encrypt(
-                    json.dumps(data, ensure_ascii=False),
-                    key["fingerprint"],
-                    symmetric=False)
+                json.dumps(data, ensure_ascii=False),
+                key["fingerprint"],
+                symmetric=False)
 
-            if encryption_result.ok == False:
-                log.msg("_encrypt_message: Encryption Failed"
-                    "Status: %r" % (encryption_result.status,))
+            if not encryption_result.ok:
+                log.msg("_encrypt_message: Encryption failed with status: %r"
+                        % (encryption_result.status,))
                 return None
 
             doc.content = {
