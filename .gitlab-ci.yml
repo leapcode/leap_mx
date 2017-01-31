@@ -1,0 +1,36 @@
+stages:
+  - package
+  - test_package
+
+
+.job_template: &job_definition
+  stage: package
+  image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
+  script: build-build-package
+  artifacts:
+    paths:
+    - '*_*.gz'
+    - '*_*.xz'
+    - '*_*.dsc'
+    - '*_amd64.changes'
+    - '*.deb'
+    - 'results/*'
+
+#test:
+#  image: leapcode/soledad:latest
+#  stage: test
+#  script:
+#    - tox --recreate
+
+package:amd64:jessie:
+  variables:
+    ARCH: "amd64"
+    DIST: "jessie"
+  <<: *job_definition
+
+lintian:
+  stage: test_package
+  script: build-test-lintian
+  tags:
+  - shell
+  - packaging
