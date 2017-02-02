@@ -25,9 +25,10 @@ PKG-INFO
 pip-log.txt
 
 # Unit test / coverage reports
+docs/cov_html/
 .coverage
 .tox
-nosetests.xml
+.cache
 
 # Translations
 *.mo

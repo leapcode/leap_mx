@@ -202,14 +202,22 @@ class MailReceiver(Service):
         with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
+
+            encryption_result = gpg.encrypt(
+                json.dumps(data, ensure_ascii=False),
+                key["fingerprint"],
+                symmetric=False)
+
+            if not encryption_result.ok:
+                log.msg("_encrypt_message: Encryption failed with status: %r"
+                        % (encryption_result.status,))
+                return None
+
             doc.content = {
                 self.INCOMING_KEY: True,
                 self.ERROR_DECRYPTING_KEY: False,
                 ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
-                ENC_JSON_KEY: str(gpg.encrypt(
-                    json.dumps(data, ensure_ascii=False),
-                    key["fingerprint"],
-                    symmetric=False))
+                ENC_JSON_KEY: str(encryption_result)
             }
 
         return doc

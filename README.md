@@ -51,6 +51,20 @@ Please use that for bug reports and feature requests instead of github's
 tracker. We're using github for code commenting and review between
 collaborators.
 
+### Running Tests
+
+You need tox to run the tests. If you don't have it in your system yet::
+
+~~~
+$ pip install tox
+~~~
+
+And then run all the tests::
+
+~~~
+$ tox
+~~~
+
 ## Issues
 
 * see the [Changelog](./CHANGELOG) for details of all major changes in the different versions

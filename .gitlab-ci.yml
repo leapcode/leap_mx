@@ -1,7 +1,7 @@
 stages:
+  #- test
   - package
   - test_package
-
 
 .job_template: &job_definition
   stage: package
@@ -20,7 +20,7 @@ stages:
 #  image: leapcode/soledad:latest
 #  stage: test
 #  script:
-#    - tox --recreate
+#  - tox --recreate
 
 package:amd64:jessie:
   variables:
