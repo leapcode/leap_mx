@@ -6,8 +6,11 @@ stages:
 .job_template: &job_definition
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
-  script: build-build-package
+  script:
+    - echo $REPOREMOTE
+    - build-build-package
   artifacts:
+    expire_in: 1w
     paths:
     - '*_*.gz'
     - '*_*.xz'
@@ -24,11 +27,17 @@ stages:
 
 package:amd64:jessie:
   variables:
+    #CI_DEBUG_TRACE: "true"
+    REPOREMOTE: 'deb.leap.se -p 4422'
     ARCH: "amd64"
     DIST: "jessie"
   <<: *job_definition
 
 lintian:
+  variables:
+    ARCH: "amd64"
+    DIST: "jessie"
+  image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   stage: test_package
   script: build-test-lintian
   tags:
