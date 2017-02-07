@@ -7,8 +7,7 @@ stages:
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
-    - echo $REPOREMOTE
-    - build-build-package
+    - bash -x -c build-build-package
   artifacts:
     expire_in: 1w
     paths:
@@ -41,4 +40,4 @@ lintian:
     DIST: "jessie"
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   stage: test_package
-  script: build-test-lintian
+  script: bash -x -c build-test-lintian
