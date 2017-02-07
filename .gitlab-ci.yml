@@ -8,6 +8,7 @@ stages:
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
     - export REPOSITORY="/srv/gitbuildpackage"
+    - echo $REPOSITORY
     - bash -x build-build-package
   artifacts:
     expire_in: 1w
