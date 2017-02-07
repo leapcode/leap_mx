@@ -29,7 +29,7 @@ package:amd64:jessie:
     REPOREMOTE: "dockerbuild@deb.leap.se"
     REPOURL: "deb.leap.se/gitbuildpackage"
     REPOREMOTE_OPTS: "-p 4422 -o StrictHostKeyChecking=no -i /etc/dockerbuild.id_rsa"
-    DEFAULT_REPOSITORY: "/srv/gitbuildpackage"
+    REPOSITORY: "/srv/gitbuildpackage"
     ARCH: "amd64"
     DIST: "jessie"
     REPOS: "gitbuildpackage"
