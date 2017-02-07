@@ -7,7 +7,6 @@ stages:
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
-    - export GPG_AGENT_INFO=$(cat /home/gitlab-runner/.gpg-agent-info)
     - bash -x build-build-package
   artifacts:
     expire_in: 1w
@@ -33,7 +32,7 @@ package:amd64:jessie:
     REPOSITORY: "/srv/gitbuildpackage"
     ARCH: "amd64"
     DIST: "jessie"
-    REPOS: "gitbuildpackage"
+    REPOS: "jessie"
   <<: *job_definition
 
 lintian:
