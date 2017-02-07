@@ -27,7 +27,7 @@ stages:
 package:amd64:jessie:
   variables:
     #CI_DEBUG_TRACE: "true"
-    REPOREMOTE: "deb.leap.se"
+    REPOREMOTE: "dockerbuild@deb.leap.se"
     REPOURL: "deb.leap.se/gitbuildpackage"
     REPOREMOTE_OPTS: "-p 4422 -o StrictHostKeyChecking=no -i /etc/dockerbuild.id_rsa"
     ARCH: "amd64"
