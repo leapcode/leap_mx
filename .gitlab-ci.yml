@@ -12,7 +12,6 @@ stages:
   artifacts:
     expire_in: 1w
     paths:
-    - '*_*.gz'
     - '*_*.xz'
     - '*_*.dsc'
     - '*_amd64.changes'
@@ -32,6 +31,7 @@ package:amd64:jessie:
     REPOREMOTE_OPTS: "-p 4422 -o StrictHostKeyChecking=no -i /etc/dockerbuild.id_rsa"
     ARCH: "amd64"
     DIST: "jessie"
+    REPOS: "gitbuildpackage"
   <<: *job_definition
 
 lintian:
@@ -41,6 +41,3 @@ lintian:
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   stage: test_package
   script: build-test-lintian
-  tags:
-  - shell
-  - packaging
