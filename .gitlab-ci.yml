@@ -7,8 +7,7 @@ stages:
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
-    - export REPOSITORY="/srv/gitbuildpackage"
-    - echo $REPOSITORY
+    - export GPG_AGENT_INFO=$(cat /home/gitlab-runner/.gpg-agent-info)
     - bash -x build-build-package
   artifacts:
     expire_in: 1w
