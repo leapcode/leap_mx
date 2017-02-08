@@ -8,6 +8,8 @@ stages:
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
     - bash -x build-build-package
+    # sleep 1h to allow debugging of running container
+    - sleep 3600
   artifacts:
     expire_in: 1w
     paths:
