@@ -7,10 +7,10 @@ stages:
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
-    # Remove hardcoded pep440 version file so
+    # Override hardcoded pep440 version file so
     # `python setup.py version` reports the correct one
     # based on `git describe`
-    - '[ -f src/leap/mx/_version.py ] && rm src/leap/mx/_version.py'
+    - 'echo y | python setup.py freeze_debianver'
     - build-build-package
     # sleep 1h to allow debugging of running container
     #- sleep 3600
