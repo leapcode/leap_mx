@@ -7,9 +7,13 @@ stages:
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
+    # Remove hardcoded pep440 version file so
+    # `python setup.py version` reports the correct one
+    # based on `git describe`
+    - rm src/leap/mx/_version.py
     - build-build-package
     # sleep 1h to allow debugging of running container
-    - sleep 3600
+    #- sleep 3600
   artifacts:
     expire_in: 1w
     paths:
