@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 VERSION_FILE="src/leap/mx/_version.py"
 rm ${VERSION_FILE}
