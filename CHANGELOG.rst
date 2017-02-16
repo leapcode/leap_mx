@@ -1,3 +1,15 @@
+0.9.1 - 16 Feb, 2016 
++++++++++++++++++++++++++++++++
+
+Bugfixes
+~~~~~~~~
+- Returns doc as None if we have some error during the encryption
+
+Misc
+~~~~~~~~
+- Packaging changes: add systemd script.
+
+
 0.8.1 - 13 May, 2016 
 +++++++++++++++++++++++++++++++
 
