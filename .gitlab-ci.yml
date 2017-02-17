@@ -43,4 +43,4 @@ lintian:
     DIST: "jessie"
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   stage: test_package
-  script: bash -x -e build-test-lintian
+  script: bash -x build-test-lintian --fail-on-warnings
