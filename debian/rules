@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --with python2 --buildsystem=python_distutils
+	dh $@ --with python2 --buildsystem=python_distutils --with=systemd
 
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGELOG.rst
