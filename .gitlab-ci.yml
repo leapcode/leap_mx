@@ -36,6 +36,7 @@ package:amd64:jessie:
     ARCH: "amd64"
     DIST: "jessie"
     REPOS: "jessie"
+    PRE_COMMIT_CMD="./debian/freeze_python_version.sh"
   <<: *job_definition
 
 lintian:
