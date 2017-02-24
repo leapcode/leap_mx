@@ -8,6 +8,7 @@ stages:
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
     - pwd
+    - git describe
     - build-build-package
     # sleep 1h to allow debugging of running container
     - sleep 3600
