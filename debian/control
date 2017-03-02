@@ -1,6 +1,6 @@
 Source: leap-mx
 Maintainer: drebs <drebs@leap.se>
-Uploader: LEAP automated build <sysdev@leap.se>
+Uploaders: LEAP automated build <sysdev@leap.se>
 Section: python
 Priority: optional
 Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 9), dh-systemd
