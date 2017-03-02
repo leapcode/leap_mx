@@ -8,7 +8,7 @@ NAME=leap-mx
 override_dh_installinit:
 	dh_systemd_enable -p${NAME} --name=${NAME} ${NAME}.service
 	dh_installinit -p${NAME} --no-start --noscripts
-	dh_systemd_start -p${NAME} --no-restart-on-upgrade
+	dh_systemd_start -p${NAME}
 
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGELOG.rst
