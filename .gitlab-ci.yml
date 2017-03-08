@@ -1,8 +1,6 @@
-# Todo:
-#   - Move test stage at the beginning of pipeline once packaging is done
 stages:
-  - package
   - test
+  - package
 
 
 .job_template: &job_definition
@@ -12,7 +10,7 @@ stages:
     - "pwd; git describe"
     - build-build-package
     # Test the package with lintian
-    - build-test-lintian --fail-on-warnings
+    - build-test-lintian
     - upload-package
     # sleep 1h to allow debugging of running container
     #- sleep 3600
@@ -26,7 +24,7 @@ stages:
     - 'results/*'
 
 test:
-  image: leapcode/soledad:latest
+  image: "0xacab.org:4567/leap/gitlab-buildpackage:test_jessie_amd64"
   stage: test
   script:
   - tox --recreate
