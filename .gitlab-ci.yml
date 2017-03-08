@@ -13,8 +13,6 @@ stages:
     - build-build-package
     # Test the package with lintian
     - build-test-lintian --fail-on-warnings
-    # Upload packages from the main/default branch to dev-platform deb repo  and packaes from all other branches/MRs to the experimental-platform one.
-    - "[ ${CI_BUILD_REF_NAME} != 'master' ] && export REPOSITORY='/srv/experimental-gitbuildpackage'"
     - upload-package
     # sleep 1h to allow debugging of running container
     #- sleep 3600
