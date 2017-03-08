@@ -1,11 +1,9 @@
+# Todo:
+#   - Move test stage at the beginning of pipeline once packaging is done
 stages:
-  #- test
   - package
-  - test_package
+  - test
 
-variables:
-  ARCH: "amd64"
-  DIST: "jessie"
 
 .job_template: &job_definition
   stage: package
@@ -13,6 +11,8 @@ variables:
   script:
     - "pwd; git describe"
     - build-build-package
+    # Test the package with lintian
+    - build-test-lintian --fail-on-warnings
     # Upload packages from the main/default branch to dev-platform deb repo  and packaes from all other branches/MRs to the experimental-platform one.
     - "[ ${CI_BUILD_REF_NAME} != 'master' ] && export REPOSITORY='/srv/experimental-gitbuildpackage'"
     - upload-package
@@ -27,16 +27,14 @@ variables:
     - '*.deb'
     - 'results/*'
 
-#test:
-#  image: leapcode/soledad:latest
-#  stage: test
-#  script:
-#  - tox --recreate
+test:
+  image: leapcode/soledad:latest
+  stage: test
+  script:
+  - tox --recreate
 
-package:amd64:jessie:
+package:amd64_jessie:
+  variables:
+    ARCH: "amd64"
+    DIST: "jessie"
   <<: *job_definition
-
-lintian:
-  image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
-  stage: test_package
-  script: bash -x build-test-lintian --fail-on-warnings
