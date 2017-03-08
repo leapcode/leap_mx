@@ -38,3 +38,9 @@ package:amd64_jessie:
     ARCH: "amd64"
     DIST: "jessie"
   <<: *job_definition
+
+package:amd64_stretch:
+  variables:
+    ARCH: "amd64"
+    DIST: "stretch"
+  <<: *job_definition
