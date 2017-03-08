@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+NAME=leap-mx
+
+%:
+	dh $@ --with python2 --buildsystem=python_distutils --with=systemd
+
+override_dh_installinit:
+	dh_systemd_enable -p${NAME} --name=${NAME} ${NAME}.service
+	dh_installinit -p${NAME} --no-start --noscripts
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.rst
