@@ -3,17 +3,20 @@ stages:
   - package
   - test_package
 
+variables:
+  ARCH: "amd64"
+  DIST: "jessie"
+
 .job_template: &job_definition
   stage: package
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   script:
-    - pwd
-    - git describe
+    - "pwd; git describe"
     - build-build-package
     # Upload packages from the main/default branch to dev-platform deb repo  and packaes from all other branches/MRs to the experimental-platform one.
     - "[ ${CI_BUILD_REF_NAME} != 'master' ] && export REPOSITORY='/srv/experimental-gitbuildpackage'"
     - upload-package
-      # sleep 1h to allow debugging of running container
+    # sleep 1h to allow debugging of running container
     #- sleep 3600
   artifacts:
     expire_in: 1w
@@ -31,22 +34,9 @@ stages:
 #  - tox --recreate
 
 package:amd64:jessie:
-  variables:
-    #CI_DEBUG_TRACE: "true"
-    REPOREMOTE: "gitlab-runner@deb.leap.se"
-    REPOURL: "deb.leap.se/gitbuildpackage"
-    REPOREMOTE_OPTS: "-p 4422 -o StrictHostKeyChecking=no -i /etc/dockerbuild.id_rsa -o SendEnv=REPOSITORY"
-    REPOSITORY: "/srv/gitbuildpackage"
-    ARCH: "amd64"
-    DIST: "jessie"
-    REPOS: "jessie"
-    PRE_COMMIT_CMD: "freeze_python_version.sh"
   <<: *job_definition
 
 lintian:
-  variables:
-    ARCH: "amd64"
-    DIST: "jessie"
   image: "0xacab.org:4567/leap/gitlab-buildpackage:build_${DIST}_${ARCH}"
   stage: test_package
   script: bash -x build-test-lintian --fail-on-warnings
