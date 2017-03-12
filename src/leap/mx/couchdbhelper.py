@@ -184,7 +184,8 @@ class ConnectedCouchDB(client.CouchDB):
 
         :return: A deferred which fires with the new revision identifier for
                  the document if the Document object has being updated, or
-                 which fails with CouchDBError if there was any error.
+                 which fails with the correspondent exception if there was any
+                 error.
         """
         # TODO: that should be implemented with paisley
         url = self._mail_couch_url + "/user-%s" % (uuid,)
@@ -192,8 +193,4 @@ class ConnectedCouchDB(client.CouchDB):
             db = CouchDatabase.open_database(url, create=False)
             return defer.succeed(db.put_doc(doc))
         except Exception as e:
-            return defer.fail(CouchDBError(e.message))
-
-
-class CouchDBError(Exception):
-    pass
+            return defer.fail(e)

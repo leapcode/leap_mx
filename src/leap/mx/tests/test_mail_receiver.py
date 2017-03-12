@@ -19,7 +19,6 @@
 MailReceiver tests
 """
 
-import codecs
 import json
 import os
 import os.path
@@ -31,7 +30,6 @@ from twisted.internet import defer, reactor
 from twisted.trial import unittest
 
 from leap.keymanager import openpgp
-from leap.mx.couchdbhelper import CouchDBError
 from leap.mx.mail_receiver import MailReceiver
 
 
@@ -91,7 +89,7 @@ class MailReceiverTestCase(unittest.TestCase):
 
         def put_doc_raise(*args):
             defer_called.callback(None)
-            return defer.fail(CouchDBError())
+            return defer.fail(Exception())
 
         self.users_cdb.put_doc = put_doc_raise
         _, path = self.addMail()
