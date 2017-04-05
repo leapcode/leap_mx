@@ -42,6 +42,8 @@ import email.utils
 
 from datetime import datetime, timedelta
 from email import message_from_string
+from pgpy import PGPKey, PGPMessage
+from pgpy.errors import PGPEncryptionError
 
 from twisted.application.service import Service, IService
 from twisted.internet import inotify, defer, task, reactor
@@ -53,8 +55,6 @@ from leap.soledad.common.crypto import EncryptionSchemes
 from leap.soledad.common.crypto import ENC_JSON_KEY
 from leap.soledad.common.crypto import ENC_SCHEME_KEY
 from leap.soledad.common.document import ServerDocument
-
-from leap.keymanager import openpgp
 
 from leap.mx.bounce import bounce_message
 from leap.mx.bounce import InvalidReturnPathError
@@ -168,7 +168,6 @@ class MailReceiver(Service):
         """
         Given a public key and a message, it encrypts the message to
         that public key.
-        The address is needed in order to build the OpenPGPKey object.
 
         :param pubkey: public key for the owner of the message
         :type pubkey: str
@@ -182,52 +181,38 @@ class MailReceiver(Service):
         if pubkey is None or len(pubkey) == 0:
             log.msg("_encrypt_message: Something went wrong, here's all "
                     "I know: %r" % (pubkey,))
-            return None
+            raise Exception('Not valid key')
 
         doc = ServerDocument(doc_id=str(pyuuid.uuid4()))
 
         # store plain text if pubkey is not available
         data = {'incoming': True, 'content': message}
-        if pubkey is None or len(pubkey) == 0:
+        json_dump = json.dumps(data, ensure_ascii=False)
+        try:
+            key, _ = PGPKey.from_blob(pubkey)
+            if key.expires_at and key.expires_at < datetime.now():
+                log.msg("_encrypt_message: the key is expired (%s)"
+                        % str(key.expires_at))
+
+            message = PGPMessage.new(json_dump)
+            encryption_result = key.encrypt(message)
+        except (ValueError, PGPEncryptionError) as e:
+            log.msg("_encrypt_message: Encryption failed with status: %s"
+                    % (e,))
             doc.content = {
                 self.INCOMING_KEY: True,
                 self.ERROR_DECRYPTING_KEY: False,
                 ENC_SCHEME_KEY: EncryptionSchemes.NONE,
-                ENC_JSON_KEY: json.dumps(data,
-                                         ensure_ascii=False)
+                ENC_JSON_KEY: json_dump
             }
             return doc
 
-        # otherwise, encrypt
-        with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
-            gpg.import_keys(pubkey)
-            key = gpg.list_keys().pop()
-
-            if key['expires']:
-                expires = datetime.fromtimestamp(int(key['expires']))
-                if expires < datetime.now():
-                    log.msg("_encrypt_message: the key is expired (%s), "
-                            "can't encrypt" % (str(expires),))
-                    raise Exception("Expired key")
-
-            encryption_result = gpg.encrypt(
-                json.dumps(data, ensure_ascii=False),
-                key["fingerprint"],
-                symmetric=False)
-
-            if not encryption_result.ok:
-                log.msg("_encrypt_message: Encryption failed with status: %r"
-                        % (encryption_result.status,))
-                raise Exception("Encryption failed: %r"
-                                % (encryption_result.status,))
-
-            doc.content = {
-                self.INCOMING_KEY: True,
-                self.ERROR_DECRYPTING_KEY: False,
-                ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
-                ENC_JSON_KEY: str(encryption_result)
-            }
-
+        doc.content = {
+            self.INCOMING_KEY: True,
+            self.ERROR_DECRYPTING_KEY: False,
+            ENC_SCHEME_KEY: EncryptionSchemes.PUBKEY,
+            ENC_JSON_KEY: str(encryption_result)
+        }
         return doc
 
     @defer.inlineCallbacks

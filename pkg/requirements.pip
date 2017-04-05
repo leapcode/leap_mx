@@ -2,6 +2,8 @@ Twisted>=12.0.2
 
 paisley>=0.3.1
 
+pgpy
+
 # python-couchdb is used by leap.soledad.common,
 # maybe we should get it as optional/recommends
 # in soledad-common, but we need to declare here

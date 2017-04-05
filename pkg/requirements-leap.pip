@@ -1,3 +1,2 @@
 leap.common>=0.5.1
 leap.soledad.common>=0.8.0
-leap.keymanager>=0.5.0

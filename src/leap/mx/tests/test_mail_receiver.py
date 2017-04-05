@@ -26,10 +26,10 @@ import shutil
 import tempfile
 
 from email.message import Message
+from pgpy import PGPKey, PGPMessage
 from twisted.internet import defer, reactor
 from twisted.trial import unittest
 
-from leap.keymanager import openpgp
 from leap.mx.mail_receiver import MailReceiver
 
 
@@ -58,6 +58,7 @@ class MailReceiverTestCase(unittest.TestCase):
 
     def usersCdb(self):
         self.pubKey = PUBLIC_KEY
+        self.privKey = PRIVATE_KEY
         self.docs = []
         self.defer_put_doc = defer.Deferred()
 
@@ -98,22 +99,10 @@ class MailReceiverTestCase(unittest.TestCase):
         yield defer_called
         self.assertTrue(os.path.exists(path))
 
-    @defer.inlineCallbacks
     def test_expired_key(self):
-        defer_bounce = defer.Deferred()
-
-        def bounce_mock(*args):
-            defer_bounce.callback(args)
-            return defer.succeed(None)
-
         self.pubKey = EXPIRED_KEY
-        self.receiver._bounce_with_timeout = bounce_mock
-
-        msg, path = self.addMail("foo bar")
-        bpath, bmsg, berr = yield defer_bounce
-        self.assertEqual(path, bpath.path)
-        self.assertEqual(msg, bmsg.as_string())
-        self.assertEqual("Expired key", str(berr))
+        self.privKey = EXPIRED_PRIVATE
+        return self.test_single_mail()
 
     @defer.inlineCallbacks
     def test_misleading_encoding(self):
@@ -145,13 +134,10 @@ class MailReceiverTestCase(unittest.TestCase):
         return msg.as_string(), path
 
     def decryptDoc(self, doc):
-        encdoc = doc.content['_enc_json']
-        decdoc = {}
-
-        with openpgp.TempGPGWrapper(gpgbinary='/usr/bin/gpg') as gpg:
-            gpg.import_keys(PRIVATE_KEY)
-            decstr = gpg.decrypt(encdoc)
-            decdoc = json.loads(decstr.data)
+        key, _ = PGPKey.from_blob(self.privKey)
+        message = PGPMessage.from_blob(doc.content['_enc_json'])
+        decmsg = key.decrypt(message)
+        decdoc = json.loads(str(decmsg.message))
 
         self.assertTrue(decdoc['incoming'])
         return decdoc['content']
@@ -159,8 +145,7 @@ class MailReceiverTestCase(unittest.TestCase):
 
 # key 24D18DDF: public key "Leap Test Key <leap@leap.se>"
 KEY_FINGERPRINT = "E36E738D69173C13D709E44F2F455E2824D18DDF"
-PUBLIC_KEY = """
------BEGIN PGP PUBLIC KEY BLOCK-----
+PUBLIC_KEY = """-----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
 mQINBFC9+dkBEADNRfwV23TWEoGc/x0wWH1P7PlXt8MnC2Z1kKaKKmfnglVrpOiz
@@ -212,8 +197,7 @@ ZtQ/VymwFL3XdUWV6B/hU4PVAFvO3qlOtdJ6TpE+nEWgcWjCv5g7RjXX
 =MuOY
 -----END PGP PUBLIC KEY BLOCK-----
 """
-PRIVATE_KEY = """
------BEGIN PGP PRIVATE KEY BLOCK-----
+PRIVATE_KEY = """-----BEGIN PGP PRIVATE KEY BLOCK-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
 lQcYBFC9+dkBEADNRfwV23TWEoGc/x0wWH1P7PlXt8MnC2Z1kKaKKmfnglVrpOiz
