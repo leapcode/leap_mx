@@ -203,6 +203,13 @@ class MailReceiver(Service):
             gpg.import_keys(pubkey)
             key = gpg.list_keys().pop()
 
+            if key['expires']:
+                expires = datetime.fromtimestamp(int(key['expires']))
+                if expires < datetime.now():
+                    log.msg("_encrypt_message: the key is expired (%s), "
+                            "can't encrypt" % (str(expires),))
+                    raise Exception("Expired key")
+
             encryption_result = gpg.encrypt(
                 json.dumps(data, ensure_ascii=False),
                 key["fingerprint"],
@@ -211,7 +218,8 @@ class MailReceiver(Service):
             if not encryption_result.ok:
                 log.msg("_encrypt_message: Encryption failed with status: %r"
                         % (encryption_result.status,))
-                return None
+                raise Exception("Encryption failed: %r"
+                                % (encryption_result.status,))
 
             doc.content = {
                 self.INCOMING_KEY: True,

@@ -15,6 +15,8 @@ Features
 
 Bugfixes
 ~~~~~~~~
+- `#8663 <https://0xacab.org/leap/leap_mx/issues/8663>`_: Bounce emails for expired keys
+
 - `#1235 <https://leap.se/code/issues/1235>`_: Description for the fixed stuff corresponding with issue #1235.
 - Bugfix without related issue number.
 
