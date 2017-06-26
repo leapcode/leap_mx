@@ -42,8 +42,6 @@ import email.utils
 
 from datetime import datetime, timedelta
 from email import message_from_string
-from pgpy import PGPKey, PGPMessage
-from pgpy.errors import PGPEncryptionError
 
 from twisted.application.service import Service, IService
 from twisted.internet import inotify, defer, task, reactor
@@ -58,6 +56,9 @@ from leap.soledad.common.document import ServerDocument
 
 from leap.mx.bounce import bounce_message
 from leap.mx.bounce import InvalidReturnPathError
+
+from leap.mx.vendor.pgpy import PGPKey, PGPMessage
+from leap.mx.vendor.pgpy.errors import PGPEncryptionError
 
 
 class MailReceiver(Service):

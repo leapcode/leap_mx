@@ -26,11 +26,11 @@ import shutil
 import tempfile
 
 from email.message import Message
-from pgpy import PGPKey, PGPMessage
 from twisted.internet import defer, reactor
 from twisted.trial import unittest
 
 from leap.mx.mail_receiver import MailReceiver
+from leap.mx.vendor.pgpy import PGPKey, PGPMessage
 
 
 BOUNCE_ADDRESS = "bounce@leap.se"

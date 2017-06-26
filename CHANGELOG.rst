@@ -1,3 +1,15 @@
+0.10.0 - xxx
++++++++++++++++++++++++++++++++
+
+Bugfixes
+~~~~~~~~
+- `#8663 <https://leap.se/code/issues/8663`_: check if key is expired
+
+Features
+~~~~~~~~
+- Use pgpy instead of python-gnupg
+
+
 0.9.1 - 16 Feb, 2016 
 +++++++++++++++++++++++++++++++
 
