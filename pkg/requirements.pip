@@ -2,7 +2,9 @@ Twisted>=12.0.2
 
 paisley>=0.3.1
 
-pgpy
+# removing this dependency for the time being, we're vendoring it
+# until we port to py3
+# pgpy
 
 # python-couchdb is used by leap.soledad.common,
 # maybe we should get it as optional/recommends
