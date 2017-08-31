@@ -83,7 +83,7 @@ class MailReceiver(Service):
     MAX_BOUNCE_DELTA = timedelta(days=5)
 
     def __init__(self, users_cdb, directories, bounce_from,
-                 bounce_subject):
+                 bounce_subject, incoming_api_helper=False):
         """
         Constructor
 
@@ -107,6 +107,7 @@ class MailReceiver(Service):
         self._bounce_subject = bounce_subject
         self._bounce_timestamp = {}
         self._processing_skipped = False
+        self._incoming_api = incoming_api_helper
 
     def startService(self):
         """
@@ -237,8 +238,14 @@ class MailReceiver(Service):
                     "I know: %r | %r" % (uuid, doc))
             raise Exception("No uuid or doc")
 
-        log.msg("Exporting message for %s" % (uuid,))
-        yield self._users_cdb.put_doc(uuid, doc)
+        if self._incoming_api:
+            log.msg("Exporting message for %s over Incoming API" % (uuid,))
+            # TODO: Stop using ServerDocument when old code gets deprecated
+            content = doc.content[ENC_JSON_KEY]
+            yield self._incoming_api.put_doc(uuid, doc.doc_id, content)
+        else:
+            log.msg("Exporting message for %s directly into CouchDB" % (uuid,))
+            yield self._users_cdb.put_doc(uuid, doc)
         log.msg("Done exporting")
 
     def _remove(self, filepath):

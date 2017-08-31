@@ -21,6 +21,7 @@ import ConfigParser
 from functools import partial
 
 from leap.mx import couchdbhelper
+from leap.mx import soledadhelper
 from leap.mx.mail_receiver import MailReceiver
 from leap.mx.alias_resolver import AliasResolverFactory
 from leap.mx.check_recipient_access import CheckRecipientAccessFactory
@@ -66,6 +67,11 @@ cdb = couchdbhelper.ConnectedCouchDB(server,
                                      username=user,
                                      password=password)
 
+incoming_api = False
+if config.has_section("incoming api"):
+    args = [config.get("incoming api", option) for option in ["host", "port", "token"]]
+    incoming_api = soledadhelper.SoledadIncomingAPI(*args)
+
 
 application = service.Application("LEAP MX")
 
@@ -91,11 +97,11 @@ fingerprint_map.setServiceParent(application)
 directories = []
 for section in config.sections():
     if section in ("couchdb", "alias map", "check recipient",
-     		   "fingerprint map", "bounce"):
+                   "fingerprint map", "bounce", "incoming api"):
         continue
     to_watch = config.get(section, "path")
     recursive = config.getboolean(section, "recursive")
     directories.append([to_watch, recursive])
 
-mr = MailReceiver(cdb, directories, bounce_from, bounce_subject)
+mr = MailReceiver(cdb, directories, bounce_from, bounce_subject, incoming_api)
 mr.setServiceParent(application)
