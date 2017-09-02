@@ -8,6 +8,7 @@ Bugfixes
 Features
 ~~~~~~~~
 - Use pgpy instead of python-gnupg
+- Add support for Soledad Incoming API
 
 
 0.9.1 - 16 Feb, 2016 
