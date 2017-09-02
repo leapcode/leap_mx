@@ -20,3 +20,8 @@ port=2424
 [bounce]
 from=<address for the From: of the bounce email without domain>
 subject=Delivery failure
+
+[incoming api]
+host=localhost
+port=2525
+token=<auth token for soledad incoming api, like 'service:token'>
