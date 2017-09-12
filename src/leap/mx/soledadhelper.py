@@ -24,9 +24,14 @@ See: http://soledad.readthedocs.io/en/latest/incoming_box.html
 
 import base64
 import treq
-from six import raise_from
 from io import BytesIO
 from twisted.internet import defer
+
+try:
+    from six import raise_from
+except ImportError:
+    def raise_from(value, from_value):
+        raise value
 
 
 class UnavailableIncomingAPIException(Exception):
