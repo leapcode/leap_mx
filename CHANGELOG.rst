@@ -1,4 +1,9 @@
-0.10.0 - xxx
+0.10.1 -  `master`_ 
+-------------------------------
+
+.. note:: This version is not yet released and is under active development.
+
+0.10.0 - 28 Sep, 2017
 +++++++++++++++++++++++++++++++
 
 Bugfixes
@@ -11,7 +16,7 @@ Features
 - Add support for Soledad Incoming API
 
 
-0.9.1 - 16 Feb, 2016 
+0.9.1 - 16 Feb, 2017
 +++++++++++++++++++++++++++++++
 
 Bugfixes
