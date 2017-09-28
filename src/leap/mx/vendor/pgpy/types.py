@@ -38,12 +38,25 @@ __all__ = ['Armorable',
            'Fingerprint',
            'SorteDeque']
 
+# XXX port of six's with_metaclass in 1.10.0, see PGPy/issues/217
+
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass."""
+    # This requires a bit of explanation: the basic idea is to make a dummy
+    # metaclass for one level of class instantiation that replaces itself with
+    # the actual metaclass.
+    class metaclass(meta):
+
+        def __new__(cls, name, this_bases, d):
+            return meta(name, bases, d)
+    return type.__new__(metaclass, 'temporary_class', (), {})
+
 if six.PY2:
     FileNotFoundError = IOError
     re.ASCII = 0
 
 
-class Armorable(six.with_metaclass(abc.ABCMeta)):
+class Armorable(with_metaclass(abc.ABCMeta)):
     __crc24_init__ = 0x0B704CE
     __crc24_poly__ = 0x1864CFB
 
@@ -241,7 +254,7 @@ class ParentRef(object):
         self._parent = None
 
 
-class PGPObject(six.with_metaclass(abc.ABCMeta, object)):
+class PGPObject(with_metaclass(abc.ABCMeta, object)):
     __metaclass__ = abc.ABCMeta
 
     @staticmethod
@@ -543,7 +556,7 @@ class MetaDispatchable(abc.ABCMeta):
         return obj
 
 
-class Dispatchable(six.with_metaclass(MetaDispatchable, PGPObject)):
+class Dispatchable(with_metaclass(MetaDispatchable, PGPObject)):
     __metaclass__ = MetaDispatchable
 
     @abc.abstractproperty

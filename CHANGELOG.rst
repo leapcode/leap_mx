@@ -1,7 +1,14 @@
-0.10.1 -  `master`_ 
+0.10.2 -  `master`_ 
 -------------------------------
 
 .. note:: This version is not yet released and is under active development.
+
+0.10.1 - 28 Sep, 2017
++++++++++++++++++++++++++++++++
+
+Bugfixes
+~~~~~~~~
+- `#8672 <https://leap.se/code/issues/8672`_: fix an incompatibility with six==1.11.0
 
 0.10.0 - 28 Sep, 2017
 +++++++++++++++++++++++++++++++
