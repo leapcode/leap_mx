@@ -76,7 +76,7 @@ class SoledadIncomingAPI:
                  which fails with the correspondent exception if there was any
                  error.
         """
-        url = self._incoming_url + "user-%s/%s" % (uuid, doc_id)
+        url = self._incoming_url + "%s/%s" % (uuid, doc_id)
         try:
             response = yield treq.put(
                 url,
