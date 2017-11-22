@@ -1,6 +1,12 @@
+leap-mx (0.10.2) unstable; urgency=medium
+
+  * Update to 0.10.2 release.
+
+ -- Kali Kaneko <kali@leap.se>  Wed, 22 Nov 2017 18:02:00 +0100
+
 leap-mx (0.10.1) unstable; urgency=medium
 
-  *Update to 0.10.1 release.
+  * Update to 0.10.1 release.
 
  -- Kali Kaneko <kali@leap.se>  Thu, 28 Sep 2017 18:36:00 +0200
 

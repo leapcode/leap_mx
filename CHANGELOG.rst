@@ -1,7 +1,14 @@
-0.10.2 -  `master`_ 
+0.10.3 -  `master`_ 
 -------------------------------
 
 .. note:: This version is not yet released and is under active development.
+
+0.10.2 - 22 Nov, 2017 
+-------------------------------
+
+Bugfixes
+~~~~~~~~
+- Fix delivery using soledad incoming API. 
 
 0.10.1 - 28 Sep, 2017
 +++++++++++++++++++++++++++++++
